@@ -146,7 +146,7 @@ export function ShowcaseApp() {
       : /evidence|source|support|citation/.test(promptLower)
         ? { tool: choose("nodegraph_evidence_summary"), args: { nodeId: selectedNode, limit: 10 } }
         : /who|researched|agent|changed|trace/.test(promptLower)
-          ? { tool: choose("nodegraph_search"), args: { query: "Maya Room NodeAgent trace", limit: 10 } }
+          ? { tool: choose("nodegraph_search"), args: { query: "Maya", limit: 10 } }
           : { tool: choose("nodegraph_select_neighborhood"), args: { nodeId: selectedNode, hops: 2 } };
     const result = await planned.tool.execute(planned.args, {});
     return {
