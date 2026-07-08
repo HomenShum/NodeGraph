@@ -20,7 +20,7 @@ Edges use semantic verbs such as `researched`, `cited`, `supported_by`, `authore
 ## Usage
 
 ```ts
-import { buildSemanticGraph, selectSemanticNeighborhood } from "nodegraph";
+import { buildSemanticGraph, selectSemanticNeighborhood, createNodeGraphAgentTools } from "nodegraph";
 
 const graph = buildSemanticGraph({
   roomId: "room-1",
@@ -33,7 +33,14 @@ const graph = buildSemanticGraph({
 
 const company = graph.nodes.find((node) => node.kind === "company");
 const selection = selectSemanticNeighborhood(graph, company?.id, 2);
+const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
 ```
+
+## NodeAgent Bridge
+
+NodeGraph does not replace NodeRoom's NodeAgent. It exposes a bridge that lets the canonical NodeAgent runtime call graph tools and lets the React graph UI mount a `NodeGraphAgentPanel`.
+
+See `docs/nodeagent-integration.md` for the NodeRoom wiring.
 
 ## Development
 

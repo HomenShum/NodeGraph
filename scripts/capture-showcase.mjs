@@ -33,9 +33,9 @@ try {
 
   const frames = [
     async () => page.getByRole("button", { name: /CardioNova diligence/i }).click(),
-    async () => page.getByRole("button", { name: /Who researched/i }).click(),
-    async () => page.getByRole("button", { name: /Show funding/i }).click(),
-    async () => page.getByRole("button", { name: /Open risk/i }).click(),
+    async () => page.locator(".story").getByRole("button", { name: "Who researched the company?" }).click(),
+    async () => page.locator(".story").getByRole("button", { name: "Show funding evidence" }).click(),
+    async () => page.locator(".story").getByRole("button", { name: "Open risk questions" }).click(),
     async () => page.getByPlaceholder(/Search CardioNova/i).fill("source"),
     async () => page.getByText("Evidence-backed only").click(),
   ];
@@ -43,6 +43,7 @@ try {
   for (let index = 0; index < frames.length; index += 1) {
     await frames[index]();
     await page.waitForSelector(".react-flow__node", { timeout: 10_000 });
+    await page.locator(".react-flow__controls-fitview").click({ timeout: 2_000 }).catch(() => undefined);
     await page.waitForTimeout(850);
     await page.screenshot({ path: join(frameDir, `frame-${String(index + 1).padStart(3, "0")}.png`), fullPage: false });
   }

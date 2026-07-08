@@ -5,3 +5,5 @@ export * from "./semanticGraphFilters";
 export * from "./semanticGraphLayout";
 export * from "./semanticGraphSelectors";
 export * from "./EntityGraphDetailPanel";
+export * from "./NodeGraphAgentPanel";
+export * from "./nodeAgentBridge";

@@ -3,10 +3,13 @@ import { Background, Controls, Handle, MarkerType, MiniMap, Position, ReactFlow,
 import { Search, Sparkles } from "lucide-react";
 import {
   EntityGraphDetailPanel,
+  NodeGraphAgentPanel,
   applySemanticGraphFilters,
   buildSemanticGraph,
+  createNodeGraphAgentTools,
   layoutSemanticGraph,
   selectSemanticNeighborhood,
+  type NodeGraphAgentPanelRequest,
   type SemanticGraphNodeKind,
 } from "../../../src";
 import { agent, companyResearch, members, notebook, proposals, traceEvents } from "./demoData";
@@ -125,6 +128,33 @@ export function ShowcaseApp() {
       setSelectedId(node?.id ?? null);
     }, 40);
   };
+  const runShowcaseNodeAgent = async (request: NodeGraphAgentPanelRequest) => {
+    const tools = createNodeGraphAgentTools({
+      getGraph: () => request.graph,
+      onFocusNode: setSelectedId,
+      onApplyFilters: (filters) => {
+        if (filters.query !== undefined) setQuery(filters.query);
+        if (filters.evidenceBackedOnly !== undefined) setEvidenceOnly(filters.evidenceBackedOnly);
+      },
+    });
+    const promptLower = request.prompt.toLowerCase();
+    const companyNodeId = request.graph.nodes.find((node) => node.kind === "company")?.id;
+    const selectedNode = request.selectedNodeId ?? companyNodeId ?? request.graph.nodes[0]?.id;
+    const choose = (name: string) => tools.find((tool) => tool.name === name)!;
+    const planned = /review|gap|open question|blocker/.test(promptLower)
+      ? { tool: choose("nodegraph_open_questions"), args: { limit: 8 } }
+      : /evidence|source|support|citation/.test(promptLower)
+        ? { tool: choose("nodegraph_evidence_summary"), args: { nodeId: selectedNode, limit: 10 } }
+        : /who|researched|agent|changed|trace/.test(promptLower)
+          ? { tool: choose("nodegraph_search"), args: { query: "Maya Room NodeAgent trace", limit: 10 } }
+          : { tool: choose("nodegraph_select_neighborhood"), args: { nodeId: selectedNode, hops: 2 } };
+    const result = await planned.tool.execute(planned.args, {});
+    return {
+      finalText: summarizeShowcaseAgentResult(planned.tool.name, result),
+      trace: [{ tool: planned.tool.name, result }],
+      raw: result,
+    };
+  };
 
   return (
     <main className="showcase" data-testid="nodegraph-showcase">
@@ -184,12 +214,38 @@ export function ShowcaseApp() {
           </ReactFlow>
         </div>
 
-        <EntityGraphDetailPanel
-          selection={selection}
-          onClose={() => setSelectedId(null)}
-          onOpenArtifact={(artifactId) => focus(artifactId)}
-        />
+        <aside className="rightStack">
+          <EntityGraphDetailPanel
+            selection={selection}
+            onClose={() => setSelectedId(null)}
+            onOpenArtifact={(artifactId) => focus(artifactId)}
+          />
+          <NodeGraphAgentPanel
+            graph={renderGraph}
+            selectedNodeId={selected}
+            onRunAgent={runShowcaseNodeAgent}
+          />
+        </aside>
       </section>
     </main>
   );
+}
+
+function summarizeShowcaseAgentResult(toolName: string, result: unknown): string {
+  const data = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  if (toolName === "nodegraph_open_questions") {
+    const questions = Array.isArray(data.questions) ? data.questions.length : 0;
+    return `NodeAgent found ${questions} review item${questions === 1 ? "" : "s"} in the graph. Use the listed node ids and refs to decide what evidence still needs to be attached.`;
+  }
+  if (toolName === "nodegraph_evidence_summary") {
+    const backed = Array.isArray(data.sourceBackedNodes) ? data.sourceBackedNodes.length : 0;
+    const review = Array.isArray(data.needsReviewNodes) ? data.needsReviewNodes.length : 0;
+    return `NodeAgent found ${backed} source-backed node${backed === 1 ? "" : "s"} and ${review} needs-review node${review === 1 ? "" : "s"} around the current focus.`;
+  }
+  if (toolName === "nodegraph_search") {
+    const total = typeof data.totalMatches === "number" ? data.totalMatches : 0;
+    return `NodeAgent searched the graph and found ${total} matching node${total === 1 ? "" : "s"}, including people, agent trace context, and connected evidence.`;
+  }
+  const selected = data.selected && typeof data.selected === "object" ? data.selected as { label?: string } : undefined;
+  return `NodeAgent selected ${selected?.label ?? "the graph focus"} and expanded its semantic neighborhood using NodeGraph tools.`;
 }

@@ -8,10 +8,11 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 960px; min-height: 100vh; background: #080a0d; }
-button, input { font: inherit; }
+html, body, #root { height: 100%; }
+body { margin: 0; min-width: 960px; min-height: 100vh; overflow: hidden; background: #080a0d; }
+button, input, textarea { font: inherit; }
 
-.showcase { min-height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #080a0d; }
+.showcase { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; background: #080a0d; }
 .hero { display: flex; align-items: end; justify-content: space-between; gap: 32px; padding: 34px 40px 26px; border-bottom: 1px solid #232832; background: linear-gradient(180deg, #10141a 0%, #0a0d11 100%); }
 .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #ff9e6a; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
 .hero h1 { margin: 10px 0 8px; max-width: 760px; font-size: 42px; line-height: 1.04; letter-spacing: 0; }
@@ -45,7 +46,9 @@ button, input { font: inherit; }
 .ng-node em { color: #7f8a9a; font: 9px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; font-style: normal; }
 .ng-node .react-flow__handle { opacity: 0; pointer-events: none; }
 
-.r-entity-detail { min-height: 0; border-left: 1px solid #232832; display: flex; flex-direction: column; overflow: hidden; background: #0d1116; }
+.rightStack { min-height: 0; border-left: 1px solid #232832; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: #0d1116; overflow: hidden; }
+.rightStack .r-entity-detail { border-left: 0; }
+.r-entity-detail { min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #0d1116; }
 .r-entity-detail-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 14px 14px; border-bottom: 1px solid #232832; }
 .r-entity-detail-title { min-width: 0; flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 900; }
 .r-entity-detail-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -65,3 +68,27 @@ button, input { font: inherit; }
 .r-entity-detail-row-sub { color: #8ea2bd; font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
 .r-entity-detail-edge { display: flex; justify-content: space-between; gap: 8px; margin: 3px 4px; padding: 6px 8px; border-radius: 8px; background: #12171d; color: #cbd5e1; font-size: 11px; }
 .r-entity-detail-edge span:last-child { color: #8ea2bd; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
+
+.ng-agent-panel { border-top: 1px solid #232832; padding: 12px; background: #0b0f13; }
+.ng-agent-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.ng-agent-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #60d0e0; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.ng-agent-head h2 { margin: 2px 0 0; color: #f8fafc; font-size: 15px; line-height: 1.15; }
+.ng-agent-state { padding: 4px 7px; border: 1px solid #2a303b; border-radius: 999px; color: #8ea2bd; background: #11161c; font: 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
+.ng-agent-context { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }
+.ng-agent-context span, .ng-agent-context strong { padding: 4px 6px; border-radius: 999px; background: #12171d; color: #8ea2bd; font-size: 10px; font-weight: 800; }
+.ng-agent-context strong { color: #ffb187; }
+.ng-agent-suggestions { display: grid; gap: 6px; margin-bottom: 8px; }
+.ng-agent-suggestions button { min-height: 28px; display: flex; align-items: center; gap: 7px; padding: 5px 8px; border: 1px solid #2a303b; border-radius: 8px; background: #11161c; color: #cbd5e1; font-size: 11px; font-weight: 800; text-align: left; cursor: pointer; }
+.ng-agent-suggestions button:hover { border-color: #3b4654; background: #171c23; color: #fff; }
+.ng-agent-form { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 7px; align-items: stretch; }
+.ng-agent-form textarea { min-width: 0; width: 100%; resize: none; border: 1px solid #2a303b; border-radius: 8px; outline: 0; padding: 8px; background: #11161c; color: #edf2f7; font-size: 12px; line-height: 1.35; }
+.ng-agent-form textarea:focus { border-color: rgba(96,208,224,.65); box-shadow: 0 0 0 3px rgba(96,208,224,.08); }
+.ng-agent-form button { width: 34px; border: 1px solid rgba(96,208,224,.55); border-radius: 8px; background: rgba(96,208,224,.12); color: #8de8f4; cursor: pointer; }
+.ng-agent-form button:disabled, .ng-agent-suggestions button:disabled { opacity: .55; cursor: not-allowed; }
+.ng-agent-error { margin-top: 8px; padding: 8px; border-radius: 8px; color: #ffb4a8; background: rgba(224,112,96,.12); font-size: 11px; }
+.ng-agent-answer { margin-top: 8px; padding: 9px; border: 1px solid #2a303b; border-radius: 8px; background: #11161c; }
+.ng-agent-answer p { margin: 0; color: #edf2f7; font-size: 12px; line-height: 1.45; }
+.ng-agent-trace { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.ng-agent-trace span { padding: 3px 6px; border-radius: 999px; background: rgba(96,208,224,.1); color: #8de8f4; font: 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
