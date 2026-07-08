@@ -1,0 +1,40 @@
+{
+  "name": "nodegraph",
+  "version": "0.1.0",
+  "description": "Semantic relationship graph primitives extracted from NodeRoom.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HomenShum/NodeGraph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HomenShum/NodeGraph/issues"
+  },
+  "homepage": "https://github.com/HomenShum/NodeGraph#readme",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^0.511.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
+  }
+}
