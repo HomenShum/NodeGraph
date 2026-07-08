@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 import streamlit.components.v1 as components
 from pyvis.network import Network
+from st_link_analysis import EdgeStyle, NodeStyle, st_link_analysis
 
 
 ROOT = Path(__file__).resolve().parent
@@ -39,6 +40,24 @@ STATUS_COLORS = {
     "rejected": "#e07060",
     "graph_inferred": "#9aa7b5",
     "manual": "#8f9aaa",
+}
+
+KIND_ICONS = {
+    "company": "business",
+    "person": "person",
+    "agent_job": "smartphone",
+    "artifact": "description",
+    "spreadsheet_row": "analytics",
+    "notebook_block": "description",
+    "source": "link",
+    "evidence_fact": "assured_workload",
+    "funding": "request_quote",
+    "project": "science",
+    "achievement": "badge",
+    "event": "flag",
+    "trace_step": "analytics",
+    "proposal": "campaign",
+    "open_question": "chat",
 }
 
 
@@ -191,6 +210,70 @@ def render_network(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], foc
     return network.generate_html(notebook=False)
 
 
+def link_analysis_elements(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str, list[dict[str, dict[str, Any]]]]:
+    node_ids = {node["id"] for node in nodes}
+    return {
+        "nodes": [
+            {
+                "data": {
+                    "id": node["id"],
+                    "label": node["kind"].upper(),
+                    "name": node["label"],
+                    "kind": node["kind"],
+                    "status": node.get("status", "manual"),
+                    "subtitle": node.get("subtitle", ""),
+                    "weight": node.get("weight", 1),
+                    "refs": json.dumps(node.get("refs", []), ensure_ascii=True),
+                    "meta": json.dumps(node.get("meta", {}), ensure_ascii=True),
+                }
+            }
+            for node in nodes
+        ],
+        "edges": [
+            {
+                "data": {
+                    "id": edge["id"],
+                    "source": edge["source"],
+                    "target": edge["target"],
+                    "label": edge["kind"].upper(),
+                    "relationship": edge["label"],
+                    "status": edge.get("status", "manual"),
+                    "weight": edge.get("weight", 1),
+                    "refs": json.dumps(edge.get("refs", []), ensure_ascii=True),
+                }
+            }
+            for edge in edges
+            if edge["source"] in node_ids and edge["target"] in node_ids
+        ],
+    }
+
+
+def link_analysis_node_styles(kinds: list[str]) -> list[NodeStyle]:
+    return [
+        NodeStyle(
+            label=kind.upper(),
+            color=KIND_COLORS.get(kind, "#94a3b8"),
+            caption="name",
+            icon=KIND_ICONS.get(kind),
+        )
+        for kind in kinds
+    ]
+
+
+def link_analysis_edge_styles(edges: list[dict[str, Any]]) -> list[EdgeStyle]:
+    kinds = sorted({edge["kind"] for edge in edges})
+    return [
+        EdgeStyle(
+            label=kind.upper(),
+            color="#9aa7b5",
+            caption="relationship",
+            directed=True,
+            curve_style="bezier",
+        )
+        for kind in kinds
+    ]
+
+
 st.set_page_config(page_title="NodeGraph Streamlit", layout="wide")
 st.title("NodeGraph Streamlit Showcase")
 st.caption("A Neo4j-style property graph view over NodeGraph nodes, edges, statuses, and provenance refs.")
@@ -211,12 +294,24 @@ def query_param(name: str, default: str = "") -> str:
 default_query = query_param("query")
 default_evidence_only = query_param("evidence").lower() in {"1", "true", "yes"}
 default_focus = query_param("focus", "company:cardionova")
+default_renderer = query_param("renderer", "link-analysis")
 
 with st.sidebar:
     st.header("Graph controls")
+    renderer_options = {
+        "link-analysis": "Cytoscape link analysis",
+        "pyvis": "PyVis physics graph",
+    }
+    renderer_value = st.selectbox(
+        "Renderer",
+        list(renderer_options),
+        index=list(renderer_options).index(default_renderer) if default_renderer in renderer_options else 0,
+        format_func=lambda value: renderer_options[value],
+    )
     query_value = st.text_input("Search", value=default_query, placeholder="CardioNova, Maya, source...")
     selected_kind_values = st.multiselect("Node kinds", all_kinds, default=all_kinds)
     evidence_only_value = st.toggle("Evidence-backed or review nodes only", value=default_evidence_only)
+    layout_value = st.selectbox("Layout", ["fcose", "cose", "dagre", "breadthfirst", "concentric", "circle"], index=0)
     focus_options = [""] + [node["id"] for node in graph_data["nodes"]]
     focus_index = focus_options.index(default_focus) if default_focus in focus_options else 1 if len(focus_options) > 1 else 0
     focus_value = st.selectbox(
@@ -239,7 +334,21 @@ metric_cols[1].metric("Edges", len(filtered_edges))
 metric_cols[2].metric("Sources", graph_data["stats"]["sources"])
 metric_cols[3].metric("Open questions", graph_data["stats"]["openQuestions"])
 
-components.html(render_network(filtered_nodes, filtered_edges, focus_value or None), height=750, scrolling=False)
+if renderer_value == "link-analysis":
+    selected_action = st_link_analysis(
+        link_analysis_elements(filtered_nodes, filtered_edges),
+        layout=layout_value,
+        node_styles=link_analysis_node_styles(selected_kind_values),
+        edge_styles=link_analysis_edge_styles(filtered_edges),
+        height=760,
+        key=f"nodegraph-link-analysis-{layout_value}",
+        node_actions=["expand"],
+    )
+    if selected_action:
+        st.caption("Last graph action")
+        st.json(selected_action, expanded=False)
+else:
+    components.html(render_network(filtered_nodes, filtered_edges, focus_value or None), height=750, scrolling=False)
 
 if focus_value:
     focus_node = node_lookup[focus_value]

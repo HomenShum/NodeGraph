@@ -29,7 +29,12 @@ derive Neo4j labels from `node.kind`. Relationship types should be derived from
 ## Streamlit
 
 The Streamlit example uses the same NodeGraph JSON shape and renders it with
-PyVis inside Streamlit. It is intentionally separate from the core TypeScript
+`st-link-analysis`, a Cytoscape.js community component for link analysis. It
+supports draggable nodes, pan/zoom controls, fullscreen exploration, layout
+refresh, neighborhood highlighting, and selected-element metadata. A PyVis
+physics renderer remains available in the sidebar as a fallback.
+
+The Streamlit integration is intentionally separate from the core TypeScript
 package.
 
 ```bash
