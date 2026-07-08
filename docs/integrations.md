@@ -48,3 +48,18 @@ source .venv/bin/activate
 
 The example reads `examples/streamlit/nodegraph-showcase.json`, so it can also
 be used with exported NodeRoom graph JSON.
+
+The Streamlit view also supports lightweight URL state for deterministic demos:
+
+```text
+http://localhost:8501/?focus=company:cardionova
+http://localhost:8501/?query=source&focus=source:pitchbook-cardionova&evidence=1
+```
+
+From the repo root, generate the Streamlit demo GIF with:
+
+```bash
+npm run streamlit:capture
+```
+
+The generated file is `docs/media/nodegraph-streamlit-showcase.gif`.

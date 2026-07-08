@@ -65,12 +65,20 @@ npm run showcase:capture
 
 NodeGraph already uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. It is not a Neo4j database or Cypher runtime, but its output can be adapted to Neo4j, NVL, NeoVis, PyVis, or Streamlit.
 
+![NodeGraph Streamlit showcase](docs/media/nodegraph-streamlit-showcase.gif)
+
 ```bash
 cd examples/streamlit
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
+```
+
+Generate the Streamlit README/demo GIF from the repo root:
+
+```bash
+npm run streamlit:capture
 ```
 
 See `docs/integrations.md` for the Streamlit example and Neo4j-style mapping.

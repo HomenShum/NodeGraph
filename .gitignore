@@ -3,6 +3,7 @@ dist/
 dist-showcase/
 coverage/
 docs/media/showcase-frames/
+docs/media/streamlit-showcase-frames/
 __pycache__/
 *.pyc
 .DS_Store

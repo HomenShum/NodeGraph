@@ -198,17 +198,31 @@ st.caption("A Neo4j-style property graph view over NodeGraph nodes, edges, statu
 graph_data = load_graph()
 all_kinds = sorted({node["kind"] for node in graph_data["nodes"]})
 node_lookup = {node["id"]: node for node in graph_data["nodes"]}
+query_params = st.query_params
+
+
+def query_param(name: str, default: str = "") -> str:
+    value = query_params.get(name, default)
+    if isinstance(value, list):
+        return str(value[0]) if value else default
+    return str(value)
+
+
+default_query = query_param("query")
+default_evidence_only = query_param("evidence").lower() in {"1", "true", "yes"}
+default_focus = query_param("focus", "company:cardionova")
 
 with st.sidebar:
     st.header("Graph controls")
-    query_value = st.text_input("Search", placeholder="CardioNova, Maya, source...")
+    query_value = st.text_input("Search", value=default_query, placeholder="CardioNova, Maya, source...")
     selected_kind_values = st.multiselect("Node kinds", all_kinds, default=all_kinds)
-    evidence_only_value = st.toggle("Evidence-backed or review nodes only", value=False)
+    evidence_only_value = st.toggle("Evidence-backed or review nodes only", value=default_evidence_only)
     focus_options = [""] + [node["id"] for node in graph_data["nodes"]]
+    focus_index = focus_options.index(default_focus) if default_focus in focus_options else 1 if len(focus_options) > 1 else 0
     focus_value = st.selectbox(
         "Focus node",
         focus_options,
-        index=1 if len(focus_options) > 1 else 0,
+        index=focus_index,
         format_func=lambda value: "None" if not value else node_lookup[value]["label"],
     )
 
