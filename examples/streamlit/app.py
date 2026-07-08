@@ -1,0 +1,255 @@
+from __future__ import annotations
+
+import json
+from html import escape
+from pathlib import Path
+from typing import Any
+
+import streamlit as st
+import streamlit.components.v1 as components
+from pyvis.network import Network
+
+
+ROOT = Path(__file__).resolve().parent
+GRAPH_PATH = ROOT / "nodegraph-showcase.json"
+
+KIND_COLORS = {
+    "company": "#5fd0a0",
+    "person": "#ff9e6a",
+    "agent_job": "#ff9e6a",
+    "artifact": "#6aa9ff",
+    "spreadsheet_row": "#6aa9ff",
+    "notebook_block": "#b794f4",
+    "source": "#ffd16a",
+    "evidence_fact": "#ffd16a",
+    "funding": "#e07060",
+    "project": "#60d0e0",
+    "achievement": "#f6d365",
+    "event": "#f0a040",
+    "trace_step": "#60d0e0",
+    "proposal": "#c060d0",
+    "open_question": "#f0a040",
+}
+
+STATUS_COLORS = {
+    "source_backed": "#5fd0a0",
+    "needs_review": "#f0a040",
+    "running": "#60d0e0",
+    "failed": "#e07060",
+    "rejected": "#e07060",
+    "graph_inferred": "#9aa7b5",
+    "manual": "#8f9aaa",
+}
+
+
+@st.cache_data
+def load_graph() -> dict[str, Any]:
+    with GRAPH_PATH.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def node_title(node: dict[str, Any]) -> str:
+    refs = node.get("refs") or []
+    meta = node.get("meta") or {}
+    ref_lines = "".join(f"<li>{escape(json.dumps(ref, ensure_ascii=True))}</li>" for ref in refs[:4])
+    meta_lines = "".join(f"<li>{escape(str(key))}: {escape(str(value))}</li>" for key, value in meta.items())
+    return (
+        f"<b>{escape(node['label'])}</b><br>"
+        f"{escape(node.get('subtitle') or node['kind'])}<br>"
+        f"status: {escape(node.get('status', 'manual'))}<br>"
+        f"<ul>{meta_lines}{ref_lines}</ul>"
+    )
+
+
+def edge_title(edge: dict[str, Any]) -> str:
+    refs = edge.get("refs") or []
+    ref_lines = "".join(f"<li>{escape(json.dumps(ref, ensure_ascii=True))}</li>" for ref in refs[:4])
+    return (
+        f"<b>{escape(edge['label'])}</b><br>"
+        f"type: {escape(edge['kind'].upper())}<br>"
+        f"status: {escape(edge.get('status', 'manual'))}<br>"
+        f"<ul>{ref_lines}</ul>"
+    )
+
+
+def matches_query(node: dict[str, Any], query: str) -> bool:
+    if not query:
+        return True
+    text = " ".join(
+        [
+            node.get("id", ""),
+            node.get("kind", ""),
+            node.get("label", ""),
+            node.get("subtitle", ""),
+            node.get("status", ""),
+            json.dumps(node.get("refs", []), ensure_ascii=True),
+            json.dumps(node.get("meta", {}), ensure_ascii=True),
+        ]
+    ).lower()
+    return query.lower() in text
+
+
+def filter_graph(
+    graph: dict[str, Any],
+    query: str,
+    selected_kinds: list[str],
+    evidence_only: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    allowed_kinds = set(selected_kinds)
+    nodes = [
+        node
+        for node in graph["nodes"]
+        if node["kind"] in allowed_kinds
+        and matches_query(node, query)
+        and (not evidence_only or node.get("status") in {"source_backed", "needs_review"})
+    ]
+    node_ids = {node["id"] for node in nodes}
+    edges = [
+        edge
+        for edge in graph["edges"]
+        if edge["source"] in node_ids
+        and edge["target"] in node_ids
+        and (not evidence_only or edge.get("status") in {"source_backed", "needs_review"})
+    ]
+    return nodes, edges
+
+
+def render_network(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], focus_id: str | None) -> str:
+    network = Network(
+        height="720px",
+        width="100%",
+        directed=True,
+        bgcolor="#0b0f12",
+        font_color="#e6edf3",
+        cdn_resources="in_line",
+    )
+    network.barnes_hut(
+        gravity=-32000,
+        central_gravity=0.18,
+        spring_length=145,
+        spring_strength=0.035,
+        damping=0.24,
+        overlap=0.35,
+    )
+
+    for node in nodes:
+        selected = node["id"] == focus_id
+        network.add_node(
+            node["id"],
+            label=node["label"],
+            title=node_title(node),
+            shape="dot",
+            size=min(34, 14 + int(node.get("weight", 1)) * 3),
+            borderWidth=4 if selected else 1,
+            color={
+                "background": KIND_COLORS.get(node["kind"], "#94a3b8"),
+                "border": "#f5a36c" if selected else STATUS_COLORS.get(node.get("status", "manual"), "#26313c"),
+                "highlight": {
+                    "background": KIND_COLORS.get(node["kind"], "#94a3b8"),
+                    "border": "#f5a36c",
+                },
+            },
+        )
+
+    for edge in edges:
+        network.add_edge(
+            edge["source"],
+            edge["target"],
+            label=edge["label"],
+            title=edge_title(edge),
+            arrows="to",
+            width=max(1, min(5, int(edge.get("weight", 1)))),
+            color=STATUS_COLORS.get(edge.get("status", "manual"), "#6f7a86"),
+        )
+
+    network.set_options(
+        """
+        var options = {
+          "nodes": {
+            "font": {"size": 15, "face": "Inter, system-ui, sans-serif", "color": "#e6edf3"},
+            "shadow": {"enabled": true, "color": "rgba(0,0,0,.32)", "size": 12, "x": 0, "y": 4}
+          },
+          "edges": {
+            "font": {"size": 11, "face": "Inter, system-ui, sans-serif", "color": "#aab4c2", "strokeWidth": 2},
+            "smooth": {"type": "dynamic"},
+            "arrows": {"to": {"enabled": true, "scaleFactor": 0.65}}
+          },
+          "interaction": {
+            "hover": true,
+            "tooltipDelay": 80,
+            "navigationButtons": true,
+            "keyboard": true
+          },
+          "physics": {
+            "enabled": true,
+            "stabilization": {"iterations": 140, "fit": true},
+            "minVelocity": 0.7
+          }
+        }
+        """
+    )
+    return network.generate_html(notebook=False)
+
+
+st.set_page_config(page_title="NodeGraph Streamlit", layout="wide")
+st.title("NodeGraph Streamlit Showcase")
+st.caption("A Neo4j-style property graph view over NodeGraph nodes, edges, statuses, and provenance refs.")
+
+graph_data = load_graph()
+all_kinds = sorted({node["kind"] for node in graph_data["nodes"]})
+node_lookup = {node["id"]: node for node in graph_data["nodes"]}
+
+with st.sidebar:
+    st.header("Graph controls")
+    query_value = st.text_input("Search", placeholder="CardioNova, Maya, source...")
+    selected_kind_values = st.multiselect("Node kinds", all_kinds, default=all_kinds)
+    evidence_only_value = st.toggle("Evidence-backed or review nodes only", value=False)
+    focus_options = [""] + [node["id"] for node in graph_data["nodes"]]
+    focus_value = st.selectbox(
+        "Focus node",
+        focus_options,
+        index=1 if len(focus_options) > 1 else 0,
+        format_func=lambda value: "None" if not value else node_lookup[value]["label"],
+    )
+
+filtered_nodes, filtered_edges = filter_graph(
+    graph_data,
+    query=query_value,
+    selected_kinds=selected_kind_values,
+    evidence_only=evidence_only_value,
+)
+
+metric_cols = st.columns(4)
+metric_cols[0].metric("Nodes", len(filtered_nodes))
+metric_cols[1].metric("Edges", len(filtered_edges))
+metric_cols[2].metric("Sources", graph_data["stats"]["sources"])
+metric_cols[3].metric("Open questions", graph_data["stats"]["openQuestions"])
+
+components.html(render_network(filtered_nodes, filtered_edges, focus_value or None), height=750, scrolling=False)
+
+if focus_value:
+    focus_node = node_lookup[focus_value]
+    st.subheader(focus_node["label"])
+    st.json(
+        {
+            "id": focus_node["id"],
+            "kind": focus_node["kind"],
+            "status": focus_node["status"],
+            "refs": focus_node.get("refs", []),
+            "meta": focus_node.get("meta", {}),
+        },
+        expanded=False,
+    )
+
+st.dataframe(
+    [
+        {
+            "source": edge["source"],
+            "relationship": edge["kind"].upper(),
+            "target": edge["target"],
+            "status": edge.get("status", "manual"),
+        }
+        for edge in filtered_edges
+    ],
+    use_container_width=True,
+)

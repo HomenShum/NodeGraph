@@ -61,6 +61,20 @@ npm run showcase:capture
 
 `npm run showcase:capture` writes the README GIF to `docs/media/nodegraph-showcase.gif` and expects `ffmpeg` to be available on `PATH`.
 
+## Streamlit And Neo4j-Style Graphs
+
+NodeGraph already uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. It is not a Neo4j database or Cypher runtime, but its output can be adapted to Neo4j, NVL, NeoVis, PyVis, or Streamlit.
+
+```bash
+cd examples/streamlit
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+See `docs/integrations.md` for the Streamlit example and Neo4j-style mapping.
+
 ## Origin
 
 This package was extracted from NodeRoom's semantic entity graph work. See `docs/semantic-entity-graph-research.md` for renderer research and design constraints.

@@ -1,0 +1,275 @@
+{
+  "nodes": [
+    {
+      "id": "company:cardionova",
+      "kind": "company",
+      "label": "CardioNova",
+      "subtitle": "startup diligence target",
+      "status": "source_backed",
+      "refs": [{ "artifactId": "company-research", "rowId": "r1" }],
+      "clusterIds": ["company:cardionova"],
+      "weight": 8,
+      "meta": { "tier": "A", "stage": "Series A" }
+    },
+    {
+      "id": "person:maya",
+      "kind": "person",
+      "label": "Maya",
+      "subtitle": "diligence lead",
+      "status": "manual",
+      "refs": [{ "actorId": "u-maya" }],
+      "clusterIds": ["person:maya"],
+      "weight": 5
+    },
+    {
+      "id": "person:priya",
+      "kind": "person",
+      "label": "Priya",
+      "subtitle": "review partner",
+      "status": "manual",
+      "refs": [{ "actorId": "u-priya" }],
+      "clusterIds": ["person:priya"],
+      "weight": 4
+    },
+    {
+      "id": "agent_job:room-nodeagent",
+      "kind": "agent_job",
+      "label": "Room NodeAgent",
+      "subtitle": "public agent",
+      "status": "running",
+      "refs": [{ "actorId": "room-nodeagent" }],
+      "clusterIds": ["runtime"],
+      "weight": 6
+    },
+    {
+      "id": "artifact:company-research",
+      "kind": "artifact",
+      "label": "Company research",
+      "subtitle": "source-backed sheet",
+      "status": "source_backed",
+      "refs": [{ "artifactId": "company-research", "artifactTitle": "Company research" }],
+      "clusterIds": ["artifact:company-research"],
+      "weight": 7
+    },
+    {
+      "id": "spreadsheet_row:r1",
+      "kind": "spreadsheet_row",
+      "label": "CardioNova row",
+      "subtitle": "sheet row",
+      "status": "source_backed",
+      "refs": [{ "artifactId": "company-research", "rowId": "r1" }],
+      "clusterIds": ["company:cardionova", "artifact:company-research"],
+      "weight": 6
+    },
+    {
+      "id": "funding:series-a",
+      "kind": "funding",
+      "label": "$14M Series A",
+      "subtitle": "Meridian Health Ventures",
+      "status": "source_backed",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__funding", "evidenceId": "ev-series-a" }],
+      "clusterIds": ["company:cardionova", "evidence"],
+      "weight": 6,
+      "meta": { "amount": "$14M" }
+    },
+    {
+      "id": "project:cardiology-triage",
+      "kind": "project",
+      "label": "AI triage for cardiology teams",
+      "subtitle": "product project",
+      "status": "manual",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__product" }],
+      "clusterIds": ["company:cardionova"],
+      "weight": 4
+    },
+    {
+      "id": "source:pitchbook-cardionova",
+      "kind": "source",
+      "label": "pitchbook.com",
+      "subtitle": "web source",
+      "status": "source_backed",
+      "refs": [{ "sourceUrl": "https://pitchbook.com/cardionova", "evidenceId": "ev-series-a" }],
+      "clusterIds": ["evidence"],
+      "weight": 5
+    },
+    {
+      "id": "open_question:hipaa",
+      "kind": "open_question",
+      "label": "Needs HIPAA/security evidence",
+      "subtitle": "review blocker",
+      "status": "needs_review",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__risk" }],
+      "clusterIds": ["company:cardionova"],
+      "weight": 5
+    },
+    {
+      "id": "trace_step:cardionova-enrich",
+      "kind": "trace_step",
+      "label": "Researched funding and evidence gaps",
+      "subtitle": "agent trace step",
+      "status": "graph_inferred",
+      "refs": [{ "traceId": "trace-cardionova-enrich" }],
+      "clusterIds": ["runtime"],
+      "weight": 4
+    },
+    {
+      "id": "proposal:hipaa",
+      "kind": "proposal",
+      "label": "Attach security evidence",
+      "subtitle": "pending proposal",
+      "status": "needs_review",
+      "refs": [{ "proposalId": "proposal-hipaa" }],
+      "clusterIds": ["runtime", "company:cardionova"],
+      "weight": 3
+    }
+  ],
+  "edges": [
+    {
+      "id": "researched:person:maya->company:cardionova",
+      "source": "person:maya",
+      "target": "company:cardionova",
+      "kind": "researched",
+      "label": "researched",
+      "status": "manual",
+      "refs": [{ "artifactId": "company-research", "rowId": "r1" }],
+      "weight": 3
+    },
+    {
+      "id": "reviewed:person:priya->open_question:hipaa",
+      "source": "person:priya",
+      "target": "open_question:hipaa",
+      "kind": "reviewed",
+      "label": "reviewed",
+      "status": "needs_review",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__risk" }],
+      "weight": 2
+    },
+    {
+      "id": "updated:agent_job:room-nodeagent->spreadsheet_row:r1",
+      "source": "agent_job:room-nodeagent",
+      "target": "spreadsheet_row:r1",
+      "kind": "updated",
+      "label": "updated",
+      "status": "graph_inferred",
+      "refs": [{ "traceId": "trace-cardionova-enrich" }],
+      "weight": 3
+    },
+    {
+      "id": "belongs_to:spreadsheet_row:r1->artifact:company-research",
+      "source": "spreadsheet_row:r1",
+      "target": "artifact:company-research",
+      "kind": "belongs_to",
+      "label": "belongs to",
+      "status": "manual",
+      "refs": [{ "artifactId": "company-research", "rowId": "r1" }],
+      "weight": 2
+    },
+    {
+      "id": "mentioned_in:company:cardionova->spreadsheet_row:r1",
+      "source": "company:cardionova",
+      "target": "spreadsheet_row:r1",
+      "kind": "mentioned_in",
+      "label": "mentioned in",
+      "status": "manual",
+      "refs": [{ "artifactId": "company-research", "rowId": "r1" }],
+      "weight": 3
+    },
+    {
+      "id": "derived_from:funding:series-a->spreadsheet_row:r1",
+      "source": "funding:series-a",
+      "target": "spreadsheet_row:r1",
+      "kind": "derived_from",
+      "label": "derived from",
+      "status": "source_backed",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__funding" }],
+      "weight": 3
+    },
+    {
+      "id": "supported_by:funding:series-a->source:pitchbook-cardionova",
+      "source": "funding:series-a",
+      "target": "source:pitchbook-cardionova",
+      "kind": "supported_by",
+      "label": "supported by",
+      "status": "source_backed",
+      "refs": [{ "sourceUrl": "https://pitchbook.com/cardionova", "evidenceId": "ev-series-a" }],
+      "weight": 4
+    },
+    {
+      "id": "derived_from:project:cardiology-triage->spreadsheet_row:r1",
+      "source": "project:cardiology-triage",
+      "target": "spreadsheet_row:r1",
+      "kind": "derived_from",
+      "label": "derived from",
+      "status": "manual",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__product" }],
+      "weight": 2
+    },
+    {
+      "id": "reviewed:open_question:hipaa->company:cardionova",
+      "source": "open_question:hipaa",
+      "target": "company:cardionova",
+      "kind": "reviewed",
+      "label": "reviewed",
+      "status": "needs_review",
+      "refs": [{ "artifactId": "company-research", "elementId": "r1__risk" }],
+      "weight": 2
+    },
+    {
+      "id": "triggered:trace_step:cardionova-enrich->proposal:hipaa",
+      "source": "trace_step:cardionova-enrich",
+      "target": "proposal:hipaa",
+      "kind": "triggered",
+      "label": "triggered",
+      "status": "graph_inferred",
+      "refs": [{ "traceId": "trace-cardionova-enrich" }],
+      "weight": 2
+    },
+    {
+      "id": "proposed:agent_job:room-nodeagent->proposal:hipaa",
+      "source": "agent_job:room-nodeagent",
+      "target": "proposal:hipaa",
+      "kind": "proposed",
+      "label": "proposed",
+      "status": "needs_review",
+      "refs": [{ "proposalId": "proposal-hipaa" }],
+      "weight": 2
+    }
+  ],
+  "clusters": [
+    {
+      "id": "company:cardionova",
+      "kind": "company",
+      "label": "CardioNova",
+      "nodeIds": ["company:cardionova", "spreadsheet_row:r1", "funding:series-a", "project:cardiology-triage", "open_question:hipaa", "proposal:hipaa"],
+      "edgeIds": ["mentioned_in:company:cardionova->spreadsheet_row:r1", "derived_from:funding:series-a->spreadsheet_row:r1", "reviewed:open_question:hipaa->company:cardionova"],
+      "status": "needs_review"
+    },
+    {
+      "id": "evidence",
+      "kind": "evidence",
+      "label": "Evidence",
+      "nodeIds": ["funding:series-a", "source:pitchbook-cardionova"],
+      "edgeIds": ["supported_by:funding:series-a->source:pitchbook-cardionova"],
+      "status": "source_backed"
+    }
+  ],
+  "stats": {
+    "nodes": 12,
+    "edges": 11,
+    "backedFacts": 4,
+    "openQuestions": 1,
+    "people": 2,
+    "companies": 1,
+    "traces": 1,
+    "proposals": 1,
+    "sources": 1
+  },
+  "generatedFrom": {
+    "artifacts": 1,
+    "traces": 1,
+    "proposals": 1,
+    "sessions": 1,
+    "members": 2,
+    "fallbackDemo": false
+  }
+}
