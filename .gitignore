@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-showcase/
 coverage/
+docs/media/showcase-frames/
 .DS_Store
 *.log
