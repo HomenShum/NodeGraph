@@ -24,7 +24,12 @@ Edges use semantic verbs such as `researched`, `cited`, `supported_by`, `authore
 ## Usage
 
 ```ts
-import { buildSemanticGraph, selectSemanticNeighborhood, createNodeGraphAgentTools } from "nodegraph";
+import {
+  buildGraphRelationshipReviewPlan,
+  buildSemanticGraph,
+  createNodeGraphAgentTools,
+  selectSemanticNeighborhood,
+} from "nodegraph";
 
 const graph = buildSemanticGraph({
   roomId: "room-1",
@@ -37,8 +42,14 @@ const graph = buildSemanticGraph({
 
 const company = graph.nodes.find((node) => node.kind === "company");
 const selection = selectSemanticNeighborhood(graph, company?.id, 2);
+const relationshipReview = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
 const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
 ```
+
+`buildGraphRelationshipReviewPlan` is the public version of NodeRoom's graph
+confirmation layer. It classifies graph edges as source-backed confirmations or
+relationships that still need reviewer confirmation, and returns deterministic
+JSON-friendly receipts for audits, readme demos, Streamlit apps, or agent tools.
 
 ## NodeAgent Bridge
 

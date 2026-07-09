@@ -4,6 +4,7 @@ export * from "./semanticGraphTypes";
 export * from "./semanticGraphFilters";
 export * from "./semanticGraphLayout";
 export * from "./semanticGraphSelectors";
+export * from "./relationshipReview";
 export * from "./EntityGraphDetailPanel";
 export * from "./NodeGraphAgentPanel";
 export * from "./nodeAgentBridge";

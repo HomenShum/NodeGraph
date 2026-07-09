@@ -4,6 +4,7 @@ import { buildSemanticGraph } from "../src/semanticGraph";
 import { applySemanticGraphFilters } from "../src/semanticGraphFilters";
 import { layoutSemanticGraph } from "../src/semanticGraphLayout";
 import { selectSemanticNeighborhood } from "../src/semanticGraphSelectors";
+import { buildGraphRelationshipReviewPlan, graphRelationshipReviewFileName, graphRelationshipReviewJson } from "../src/relationshipReview";
 
 const human: Actor = { kind: "user", id: "u-priya", name: "Priya" };
 const agent: Actor = { kind: "agent", id: "room-agent", name: "Room NodeAgent", scope: "public" };
@@ -157,6 +158,25 @@ describe("semantic entity graph", () => {
     expect(selectedLabels).toContain("CardioNova");
     expect(selection.sections.some((section) => section.id === "researched-companies")).toBe(true);
     expect(selection.sections.some((section) => section.id === "rows-blocks")).toBe(true);
+  });
+
+  it("builds a deterministic relationship review plan for public package consumers", () => {
+    const graph = buildSemanticGraph({ roomId: "room-1", artifacts: [researchSheet, notebook], traces: [trace], proposals: [proposal] });
+    const plan = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
+    const second = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
+
+    expect(plan.reviewVersion).toBe(1);
+    expect(plan.integrityHash).toBe(second.integrityHash);
+    expect(graphRelationshipReviewJson(plan)).toBe(graphRelationshipReviewJson(second));
+    expect(plan.relationshipCount).toBe(graph.edges.length);
+    expect(plan.confirmedCount + plan.needsConfirmationCount).toBe(plan.relationshipCount);
+    expect(plan.confirmedCount).toBeGreaterThan(0);
+    expect(plan.needsConfirmationCount).toBeGreaterThan(0);
+    expect(plan.proposalIds).toContain("proposal-1");
+    expect(plan.traceIds).toContain("trace-1");
+    expect(plan.items.some((item) => item.edgeKind === "supported_by" && item.reviewStatus === "confirmed")).toBe(true);
+    expect(plan.items.some((item) => item.edgeKind === "reviewed" && item.reviewStatus === "needs_confirmation")).toBe(true);
+    expect(graphRelationshipReviewFileName("room-1:semantic-graph", plan.integrityHash)).toBe(`room-1-semantic-graph-relationship-review-${plan.integrityHash}.json`);
   });
 
   it("filters to source-backed evidence without static mock nodes", () => {
