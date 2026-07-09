@@ -91,7 +91,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The Streamlit app calls `NODEGRAPH_NODEAGENT_URL` when set, defaulting to the bundled local bridge at `http://127.0.0.1:8787/agent`.
+The Streamlit app calls `NODEGRAPH_NODEAGENT_URL` when set, defaulting to the bundled local bridge at `http://127.0.0.1:8787/agent`. It includes a NodeRoom-style chat lane: users can type `@nodeagent` questions, use the quick prompt buttons, and inspect each reply's tool trace.
 
 Generate the Streamlit README/demo GIF from the repo root:
 

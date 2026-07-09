@@ -64,7 +64,10 @@ source .venv/bin/activate
 ```
 
 The example reads `examples/streamlit/nodegraph-showcase.json`, so it can also
-be used with exported NodeRoom graph JSON.
+be used with exported NodeRoom graph JSON. The page includes a NodeRoom-style
+NodeAgent chat lane with session-local message history, `@nodeagent` prompts,
+quick buttons for evidence/people/review gaps, and a per-reply tool trace
+expander.
 
 The Streamlit view also supports lightweight URL state for deterministic demos:
 

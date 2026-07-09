@@ -291,6 +291,76 @@ def ask_nodeagent(prompt: str, selected_node_id: str | None) -> dict[str, Any]:
     return payload
 
 
+def normalize_agent_prompt(prompt: str) -> str:
+    trimmed = prompt.strip()
+    if trimmed.lower().startswith("@nodeagent"):
+        trimmed = trimmed[len("@nodeagent"):].strip(" :,-")
+    return trimmed or "Explain the selected graph focus."
+
+
+def enqueue_agent_prompt(prompt: str) -> None:
+    st.session_state["nodegraph_agent_pending_prompt"] = prompt
+
+
+def ensure_chat_messages() -> list[dict[str, Any]]:
+    if "nodegraph_chat_messages" not in st.session_state:
+        st.session_state["nodegraph_chat_messages"] = [
+            {
+                "role": "assistant",
+                "content": "Message @nodeagent about evidence, people, traces, projects, achievements, or review gaps in the selected graph.",
+                "trace": [],
+            }
+        ]
+    return st.session_state["nodegraph_chat_messages"]
+
+
+def submit_chat_turn(prompt: str, selected_node_id: str | None) -> None:
+    messages = ensure_chat_messages()
+    messages.append({"role": "user", "content": prompt, "trace": []})
+    try:
+        response_payload = ask_nodeagent(normalize_agent_prompt(prompt), selected_node_id)
+        messages.append(
+            {
+                "role": "assistant",
+                "content": response_payload.get("finalText", "NodeAgent completed."),
+                "trace": response_payload.get("trace", []),
+            }
+        )
+    except Exception as exc:  # noqa: BLE001 - Streamlit should display bridge failures in chat.
+        messages.append(
+            {
+                "role": "assistant",
+                "content": f"NodeAgent is unavailable: {exc}",
+                "trace": [],
+                "error": True,
+            }
+        )
+
+
+def render_nodeagent_chat(selected_node_id: str | None) -> None:
+    st.subheader("NodeAgent chat")
+    st.caption("Room-style graph chat. Mention @nodeagent or just ask; each reply keeps a tool trace.")
+    messages = ensure_chat_messages()
+    for index, message in enumerate(messages):
+        role = "user" if message.get("role") == "user" else "assistant"
+        with st.chat_message(role):
+            if message.get("error"):
+                st.error(message["content"])
+            else:
+                st.markdown(message["content"])
+            if message.get("trace"):
+                with st.expander("Tool trace", expanded=False):
+                    st.json(message["trace"], expanded=False)
+
+    pending_prompt = st.session_state.pop("nodegraph_agent_pending_prompt", None)
+    chat_prompt = st.chat_input("Message @nodeagent about evidence, people, traces, or gaps...")
+    next_prompt = pending_prompt or chat_prompt
+    if next_prompt:
+        with st.spinner("NodeAgent is reading the graph..."):
+            submit_chat_turn(next_prompt, selected_node_id)
+        st.rerun()
+
+
 st.set_page_config(page_title="NodeGraph Streamlit", layout="wide")
 st.title("NodeGraph Streamlit Showcase")
 st.caption("A Neo4j-style property graph view over NodeGraph nodes, edges, statuses, and provenance refs.")
@@ -340,35 +410,28 @@ with st.sidebar:
     st.divider()
     st.subheader("NodeAgent")
     st.caption(f"Endpoint: {AGENT_URL}")
-    with st.form("nodegraph-nodeagent-form"):
-        agent_prompt = st.text_area(
-            "Ask graph agent",
-            value="Who researched this company and what evidence or review gaps are connected?",
-            height=96,
-        )
-        run_agent = st.form_submit_button("Ask NodeAgent", type="primary")
-    suggestion_cols = st.columns(2)
-    if suggestion_cols[0].button("Evidence", use_container_width=True):
-        st.session_state["nodegraph_agent_suggestion"] = "Explain source-backed evidence and needs-review gaps for the selected node."
-    if suggestion_cols[1].button("People", use_container_width=True):
-        st.session_state["nodegraph_agent_suggestion"] = "Show people, agent traces, projects, and achievements connected to this company."
-    if "nodegraph_agent_suggestion" in st.session_state:
-        agent_prompt = st.session_state.pop("nodegraph_agent_suggestion")
-        run_agent = True
-    if run_agent:
-        try:
-            st.session_state["nodegraph_agent_response"] = ask_nodeagent(agent_prompt, focus_value or None)
-            st.session_state["nodegraph_agent_error"] = None
-        except Exception as exc:  # noqa: BLE001 - Streamlit should display bridge failures.
-            st.session_state["nodegraph_agent_response"] = None
-            st.session_state["nodegraph_agent_error"] = str(exc)
-    if st.session_state.get("nodegraph_agent_error"):
-        st.error(st.session_state["nodegraph_agent_error"])
-    if st.session_state.get("nodegraph_agent_response"):
-        response_payload = st.session_state["nodegraph_agent_response"]
-        st.success(response_payload.get("finalText", "NodeAgent completed."))
-        with st.expander("NodeAgent tool trace", expanded=False):
-            st.json(response_payload.get("trace", []), expanded=False)
+    st.button(
+        "Evidence",
+        use_container_width=True,
+        on_click=enqueue_agent_prompt,
+        args=("@nodeagent explain source-backed evidence and needs-review gaps for the selected node",),
+    )
+    st.button(
+        "People + traces",
+        use_container_width=True,
+        on_click=enqueue_agent_prompt,
+        args=("@nodeagent show people, agent traces, projects, and achievements connected to this company",),
+    )
+    st.button(
+        "Review gaps",
+        use_container_width=True,
+        on_click=enqueue_agent_prompt,
+        args=("@nodeagent find blockers and open questions around this graph focus",),
+    )
+    if st.button("Clear chat", use_container_width=True):
+        st.session_state.pop("nodegraph_chat_messages", None)
+        st.session_state.pop("nodegraph_agent_pending_prompt", None)
+        st.rerun()
 
 filtered_nodes, filtered_edges = filter_graph(
     graph_data,
@@ -412,6 +475,8 @@ if focus_value:
         },
         expanded=False,
     )
+
+render_nodeagent_chat(focus_value or None)
 
 st.dataframe(
     [

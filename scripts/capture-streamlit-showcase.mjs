@@ -74,8 +74,7 @@ try {
     await page.waitForSelector("text=NodeGraph Streamlit Showcase", { timeout: 20_000 });
     await page.waitForSelector("iframe", { timeout: 20_000 });
     if (index === 0) {
-      await page.getByLabel("Ask graph agent").fill("Explain source-backed evidence and needs-review gaps for CardioNova.");
-      await page.getByRole("button", { name: "Ask NodeAgent" }).click();
+      await page.getByRole("button", { name: "Evidence", exact: true }).click();
       await page.getByText(/NodeAgent (found|searched|expanded)/).first().waitFor({ timeout: 45_000 });
     }
     await page.waitForTimeout(1800);
