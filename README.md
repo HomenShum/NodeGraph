@@ -77,12 +77,21 @@ The Streamlit example defaults to `st-link-analysis`, a Cytoscape.js community c
 ![NodeGraph Streamlit showcase](docs/media/nodegraph-streamlit-showcase.gif)
 
 ```bash
+npm run build
+npm run streamlit:agent
+```
+
+Then, in a second terminal:
+
+```bash
 cd examples/streamlit
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+The Streamlit app calls `NODEGRAPH_NODEAGENT_URL` when set, defaulting to the bundled local bridge at `http://127.0.0.1:8787/agent`.
 
 Generate the Streamlit README/demo GIF from the repo root:
 

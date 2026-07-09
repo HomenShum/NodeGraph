@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 from html import escape
 from pathlib import Path
 from typing import Any
 
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 from pyvis.network import Network
@@ -13,6 +15,8 @@ from st_link_analysis import EdgeStyle, NodeStyle, st_link_analysis
 
 ROOT = Path(__file__).resolve().parent
 GRAPH_PATH = ROOT / "nodegraph-showcase.json"
+DEFAULT_AGENT_URL = "http://127.0.0.1:8787/agent"
+AGENT_URL = os.environ.get("NODEGRAPH_NODEAGENT_URL", DEFAULT_AGENT_URL)
 
 KIND_COLORS = {
     "company": "#5fd0a0",
@@ -274,6 +278,19 @@ def link_analysis_edge_styles(edges: list[dict[str, Any]]) -> list[EdgeStyle]:
     ]
 
 
+def ask_nodeagent(prompt: str, selected_node_id: str | None) -> dict[str, Any]:
+    response = requests.post(
+        AGENT_URL,
+        json={"prompt": prompt, "selectedNodeId": selected_node_id},
+        timeout=35,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not payload.get("ok", False):
+        raise RuntimeError(str(payload.get("error", "NodeAgent request failed")))
+    return payload
+
+
 st.set_page_config(page_title="NodeGraph Streamlit", layout="wide")
 st.title("NodeGraph Streamlit Showcase")
 st.caption("A Neo4j-style property graph view over NodeGraph nodes, edges, statuses, and provenance refs.")
@@ -320,6 +337,38 @@ with st.sidebar:
         index=focus_index,
         format_func=lambda value: "None" if not value else node_lookup[value]["label"],
     )
+    st.divider()
+    st.subheader("NodeAgent")
+    st.caption(f"Endpoint: {AGENT_URL}")
+    with st.form("nodegraph-nodeagent-form"):
+        agent_prompt = st.text_area(
+            "Ask graph agent",
+            value="Who researched this company and what evidence or review gaps are connected?",
+            height=96,
+        )
+        run_agent = st.form_submit_button("Ask NodeAgent", type="primary")
+    suggestion_cols = st.columns(2)
+    if suggestion_cols[0].button("Evidence", use_container_width=True):
+        st.session_state["nodegraph_agent_suggestion"] = "Explain source-backed evidence and needs-review gaps for the selected node."
+    if suggestion_cols[1].button("People", use_container_width=True):
+        st.session_state["nodegraph_agent_suggestion"] = "Show people, agent traces, projects, and achievements connected to this company."
+    if "nodegraph_agent_suggestion" in st.session_state:
+        agent_prompt = st.session_state.pop("nodegraph_agent_suggestion")
+        run_agent = True
+    if run_agent:
+        try:
+            st.session_state["nodegraph_agent_response"] = ask_nodeagent(agent_prompt, focus_value or None)
+            st.session_state["nodegraph_agent_error"] = None
+        except Exception as exc:  # noqa: BLE001 - Streamlit should display bridge failures.
+            st.session_state["nodegraph_agent_response"] = None
+            st.session_state["nodegraph_agent_error"] = str(exc)
+    if st.session_state.get("nodegraph_agent_error"):
+        st.error(st.session_state["nodegraph_agent_error"])
+    if st.session_state.get("nodegraph_agent_response"):
+        response_payload = st.session_state["nodegraph_agent_response"]
+        st.success(response_payload.get("finalText", "NodeAgent completed."))
+        with st.expander("NodeAgent tool trace", expanded=False):
+            st.json(response_payload.get("trace", []), expanded=False)
 
 filtered_nodes, filtered_edges = filter_graph(
     graph_data,

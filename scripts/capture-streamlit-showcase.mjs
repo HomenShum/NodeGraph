@@ -9,10 +9,26 @@ const frameDir = join(outDir, "streamlit-showcase-frames");
 const gifPath = join(outDir, "nodegraph-streamlit-showcase.gif");
 const port = process.env.NODEGRAPH_STREAMLIT_PORT ?? "8508";
 const baseUrl = `http://127.0.0.1:${port}`;
+const agentPort = process.env.NODEGRAPH_NODEAGENT_PORT ?? "8788";
+const agentBaseUrl = `http://127.0.0.1:${agentPort}`;
+const agentUrl = `${agentBaseUrl}/agent`;
 
 mkdirSync(outDir, { recursive: true });
 rmSync(frameDir, { recursive: true, force: true });
 mkdirSync(frameDir, { recursive: true });
+
+await run(process.execPath, ["scripts/build.mjs"]);
+
+const agentServer = spawn("node", ["examples/streamlit/nodeagent_server.mjs"], {
+  cwd: root,
+  env: { ...process.env, NODEGRAPH_NODEAGENT_PORT: agentPort },
+  stdio: ["ignore", "pipe", "pipe"],
+  shell: process.platform === "win32",
+});
+
+let agentOutput = "";
+agentServer.stdout.on("data", (data) => { agentOutput += data.toString(); });
+agentServer.stderr.on("data", (data) => { agentOutput += data.toString(); });
 
 const server = spawn("python", [
   "-m",
@@ -29,6 +45,7 @@ const server = spawn("python", [
   "false",
 ], {
   cwd: root,
+  env: { ...process.env, NODEGRAPH_NODEAGENT_URL: agentUrl },
   stdio: ["ignore", "pipe", "pipe"],
   shell: process.platform === "win32",
 });
@@ -38,7 +55,8 @@ server.stdout.on("data", (data) => { serverOutput += data.toString(); });
 server.stderr.on("data", (data) => { serverOutput += data.toString(); });
 
 try {
-  await waitForServer(baseUrl, 45_000);
+  await waitForServer(`${agentBaseUrl}/health`, 30_000, () => agentOutput);
+  await waitForServer(baseUrl, 45_000, () => serverOutput);
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 }, deviceScaleFactor: 1 });
 
@@ -55,6 +73,11 @@ try {
     await page.goto(`${baseUrl}${frames[index]}`, { waitUntil: "networkidle" });
     await page.waitForSelector("text=NodeGraph Streamlit Showcase", { timeout: 20_000 });
     await page.waitForSelector("iframe", { timeout: 20_000 });
+    if (index === 0) {
+      await page.getByLabel("Ask graph agent").fill("Explain source-backed evidence and needs-review gaps for CardioNova.");
+      await page.getByRole("button", { name: "Ask NodeAgent" }).click();
+      await page.getByText(/NodeAgent (found|searched|expanded)/).first().waitFor({ timeout: 45_000 });
+    }
     await page.waitForTimeout(1800);
     await page.screenshot({ path: join(frameDir, `frame-${String(index + 1).padStart(3, "0")}.png`), fullPage: false });
   }
@@ -68,9 +91,10 @@ try {
   console.log(`wrote ${gifPath}`);
 } finally {
   stopServer(server);
+  stopServer(agentServer);
 }
 
-async function waitForServer(url, timeoutMs) {
+async function waitForServer(url, timeoutMs, outputOf) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     try {
@@ -81,7 +105,7 @@ async function waitForServer(url, timeoutMs) {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error(`Timed out waiting for ${url}\n${serverOutput}`);
+  throw new Error(`Timed out waiting for ${url}\n${outputOf()}`);
 }
 
 function run(command, args) {

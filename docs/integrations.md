@@ -35,7 +35,19 @@ refresh, neighborhood highlighting, and selected-element metadata. A PyVis
 physics renderer remains available in the sidebar as a fallback.
 
 The Streamlit integration is intentionally separate from the core TypeScript
-package.
+package. Its NodeAgent panel calls an HTTP bridge so Python does not need to
+import the TypeScript runtime directly. The bundled bridge uses the exported
+`runNodeGraphNodeAgent` contract and can be replaced by a NodeRoom-hosted
+endpoint through `NODEGRAPH_NODEAGENT_URL`.
+
+Start the local bridge from the repo root:
+
+```bash
+npm run build
+npm run streamlit:agent
+```
+
+Then start Streamlit in another terminal:
 
 ```bash
 cd examples/streamlit
