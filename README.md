@@ -6,6 +6,8 @@ It is renderer-friendly rather than renderer-bound: the core graph derivation, f
 
 Storyboard first: the README clips are governed by [`docs/FEATURE_PROOF_STORYBOARD.md`](docs/FEATURE_PROOF_STORYBOARD.md). They must prove the relationship story, evidence states, NodeAgent bridge, and trace/tool visibility before they are treated as publishable proof assets.
 
+Public Node repo integrations are tracked in [`docs/PUBLIC_NODE_REPO_INTEGRATIONS.md`](docs/PUBLIC_NODE_REPO_INTEGRATIONS.md): NodeMem memory clusters, NodeTrace causality, NodeRL proof episodes, and the NodeTasks `public-node-repo-proofs` bundle.
+
 ![NodeGraph product showcase](docs/media/nodegraph-showcase.gif)
 
 ## What It Models
