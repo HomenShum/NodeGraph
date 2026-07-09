@@ -4,6 +4,8 @@ NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It
 
 It is renderer-friendly rather than renderer-bound: the core graph derivation, filtering, selection, and layout functions are pure TypeScript. A compact React detail panel is included for apps that want the NodeRoom-style selection sidebar.
 
+Storyboard first: the README clips are governed by [`docs/FEATURE_PROOF_STORYBOARD.md`](docs/FEATURE_PROOF_STORYBOARD.md). They must prove the relationship story, evidence states, NodeAgent bridge, and trace/tool visibility before they are treated as publishable proof assets.
+
 ![NodeGraph product showcase](docs/media/nodegraph-showcase.gif)
 
 ## What It Models
@@ -70,7 +72,7 @@ npm run showcase:capture
 
 ## Feature Proof Studio Clips
 
-The README clips follow the [feature-proof-studio](https://github.com/HomenShum/feature-proof-studio) proof pattern: scripted browser state capture, readable frame sequencing, and ffmpeg palette output suitable for GitHub READMEs.
+The README clips follow the [feature-proof-studio](https://github.com/HomenShum/feature-proof-studio) proof pattern: storyboard first, scripted browser state capture, readable frame sequencing, and ffmpeg palette output suitable for GitHub READMEs.
 
 This repo keeps the capture scripts local so NodeGraph can regenerate its own proof assets without cloning another repo:
 
