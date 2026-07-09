@@ -68,6 +68,24 @@ npm run showcase:capture
 
 `npm run showcase:capture` writes the README GIF to `docs/media/nodegraph-showcase.gif` and expects `ffmpeg` to be available on `PATH`.
 
+## Feature Proof Studio Clips
+
+The README clips follow the [feature-proof-studio](https://github.com/HomenShum/feature-proof-studio) proof pattern: scripted browser state capture, readable frame sequencing, and ffmpeg palette output suitable for GitHub READMEs.
+
+This repo keeps the capture scripts local so NodeGraph can regenerate its own proof assets without cloning another repo:
+
+```bash
+npm run showcase:capture
+npm run streamlit:capture
+```
+
+Those commands regenerate:
+
+- `docs/media/nodegraph-showcase.gif` - React graph showcase with draggable React Flow nodes, neighborhood focus, evidence filtering, and the NodeGraph agent panel.
+- `docs/media/nodegraph-streamlit-showcase.gif` - Streamlit graph showcase with Cytoscape-style interaction, NodeAgent chat, and a visible tool trace.
+
+The same clips are also listed from `feature-proof-studio` as public proof examples.
+
 ## Streamlit And Neo4j-Style Graphs
 
 NodeGraph already uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. It is not a Neo4j database or Cypher runtime, but its output can be adapted to Neo4j, NVL, NeoVis, PyVis, or Streamlit.

@@ -6,5 +6,6 @@ docs/media/showcase-frames/
 docs/media/streamlit-showcase-frames/
 __pycache__/
 *.pyc
+.serena/
 .DS_Store
 *.log

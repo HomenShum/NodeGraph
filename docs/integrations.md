@@ -83,3 +83,21 @@ npm run streamlit:capture
 ```
 
 The generated file is `docs/media/nodegraph-streamlit-showcase.gif`.
+
+## README Proof Clips
+
+NodeGraph's README clips are maintained with the same operating standard as
+`feature-proof-studio`: deterministic browser setup, scripted state changes,
+captured intermediate states, and ffmpeg palette encoding. The capture scripts
+remain local to this repo so contributors can regenerate the clips with one npm
+command per surface.
+
+```bash
+npm run showcase:capture
+npm run streamlit:capture
+```
+
+The React showcase proves draggable React Flow nodes, selected-neighborhood
+highlighting, evidence filtering, and the graph agent panel. The Streamlit
+showcase proves the community graph component path, NodeAgent bridge, chat lane,
+and per-reply tool trace.
