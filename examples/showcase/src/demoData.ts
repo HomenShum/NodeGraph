@@ -1,4 +1,5 @@
 import type { Actor, Artifact, DataframeColumn, Element, Proposal, TraceEvent } from "../../../src/types";
+import type { DeckStoryboard } from "../../../src/semanticGraphTypes";
 
 export const maya: Actor = { kind: "user", id: "u-maya", name: "Maya" };
 export const priya: Actor = { kind: "user", id: "u-priya", name: "Priya" };
@@ -115,6 +116,40 @@ export const proposals: Proposal[] = [
     createdAt: 12,
   },
 ];
+
+export const storyboard: DeckStoryboard = {
+  deckId: "diligence-readout",
+  roomId: "showcase-room",
+  title: "Startup diligence readout",
+  audience: "investment committee",
+  objective: "Turn room evidence into a reviewable decision narrative.",
+  privacy: "room",
+  storyboardStatus: "needs_review",
+  slides: [{
+    slideId: "cardionova-funding",
+    title: "CardioNova funding evidence",
+    purpose: "Connect the Series A claim to its source and remaining diligence gap.",
+    claims: [{
+      claimId: "cardionova-series-a",
+      text: "CardioNova raised a $14M Series A led by Meridian Health Ventures.",
+      status: "verified",
+      sourceArtifactId: "company-research",
+      traceId: "trace-cardionova-enrich",
+      evidenceId: "ev-series-a",
+    }],
+    sourceArtifactIds: ["company-research"],
+    evidenceIds: ["ev-series-a"],
+    unresolvedGaps: ["Verify HIPAA and security evidence before the board memo."],
+    status: "needs_review",
+  }],
+  requiredEvidence: ["Verify HIPAA and security evidence before the board memo."],
+  unresolvedGaps: ["Verify HIPAA and security evidence before the board memo."],
+  sourceArtifactIds: ["company-research"],
+  traceIds: ["trace-cardionova-enrich"],
+  proposalIds: ["proposal-hipaa"],
+  planHash: "showcase-deck-v1",
+  version: 1,
+};
 
 export const members = [
   { id: "u-maya", roomId: "showcase-room", name: "Maya", role: "host" as const, anon: false, color: "#ff9e6a", lastSeenAt: 12 },

@@ -22,9 +22,37 @@ Streamlit components, or another graph renderer:
 | `edge.label` | Relationship display label |
 | `edge.refs` | Relationship provenance |
 
-For a Neo4j import adapter, keep the raw NodeGraph ids as immutable keys and
-derive Neo4j labels from `node.kind`. Relationship types should be derived from
-`edge.kind.toUpperCase()`.
+The package includes a driver-neutral Neo4j adapter:
+
+```ts
+import { buildNeo4jUpsertPlan, buildSemanticGraph, executeNeo4jUpsertPlan } from "nodegraph";
+
+const graph = buildSemanticGraph({ roomId, artifacts, traces, proposals, decks });
+const plan = buildNeo4jUpsertPlan(graph, roomId);
+await executeNeo4jUpsertPlan(neo4jSession, plan);
+```
+
+The plan keeps raw NodeGraph ids as immutable keys, scopes every node and
+relationship by `graphId`, derives labels and relationship types from the
+closed NodeGraph kind unions, and passes all user data as `$rows` parameters.
+It uses only standard `UNWIND`, `MERGE`, `MATCH`, and `SET` clauses, so APOC is
+not required. Provenance refs and metadata are preserved as JSON properties;
+applications can promote them to dedicated provenance nodes when their schema
+requires that topology.
+
+The adapter deliberately does not delete absent nodes. Reconciliation and
+retention policies belong to the host application because a graph may combine
+multiple room snapshots or external sources. Inspect `Neo4jUpsertPlan` before
+execution when an approval boundary is required.
+
+## Decks And Relevant Paths
+
+Pass collaborative deck storyboards through the optional `decks` input. The
+graph models decks, slides, claims, source artifacts, evidence, traces,
+proposals, and unresolved evidence gaps. `selectSemanticNeighborhood` returns
+ranked `paths` in addition to sectioned neighbors; these paths prioritize
+researched, source-backed, and review-relevant routes and are bounded to four
+hops for responsive UI use.
 
 ## Streamlit
 

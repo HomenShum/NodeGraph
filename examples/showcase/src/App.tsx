@@ -12,7 +12,7 @@ import {
   type NodeGraphAgentPanelRequest,
   type SemanticGraphNodeKind,
 } from "../../../src";
-import { agent, companyResearch, members, notebook, proposals, traceEvents } from "./demoData";
+import { agent, companyResearch, members, notebook, proposals, storyboard, traceEvents } from "./demoData";
 
 const COLORS: Record<string, string> = {
   company: "#5fd0a0",
@@ -22,6 +22,9 @@ const COLORS: Record<string, string> = {
   source: "#ffd16a",
   evidence_fact: "#ffd16a",
   artifact: "#6aa9ff",
+  deck: "#f38b6d",
+  deck_slide: "#f2b36f",
+  deck_claim: "#e8d36f",
   spreadsheet_row: "#6aa9ff",
   notebook_block: "#b794f4",
   trace_step: "#60d0e0",
@@ -32,7 +35,7 @@ const COLORS: Record<string, string> = {
   event: "#f0a040",
 };
 
-const FILTER_KINDS: SemanticGraphNodeKind[] = ["company", "person", "funding", "source", "evidence_fact", "trace_step", "open_question", "agent_job"];
+const FILTER_KINDS: SemanticGraphNodeKind[] = ["company", "person", "deck", "deck_claim", "source", "evidence_fact", "trace_step", "open_question", "agent_job"];
 
 function GraphNode({ data }: NodeProps) {
   const d = data as unknown as { label: string; kind: string; color: string; dimmed: boolean; selected: boolean };
@@ -59,6 +62,7 @@ export function ShowcaseApp() {
     members,
     traces: traceEvents,
     proposals,
+    decks: [storyboard],
     sessions: [{ id: "session-1", roomId: "showcase-room", agentId: agent.id, agentName: agent.name, scope: "public", status: "working", lastAction: "verifying CardioNova evidence", updatedAt: 12 }],
     maxRowsPerSheet: 24,
   }), []);
@@ -162,7 +166,7 @@ export function ShowcaseApp() {
         <div>
           <span className="eyebrow"><Sparkles size={14} /> NodeGraph</span>
           <h1>Evidence-backed entity maps for agent rooms.</h1>
-          <p>Derive people, companies, spreadsheet rows, notebook blocks, traces, proposals, and sources from working product data.</p>
+          <p>Derive people, companies, deck claims, spreadsheet rows, notebook blocks, traces, proposals, and sources from working product data.</p>
         </div>
         <div className="heroStats">
           <strong>{graph.stats.nodes}</strong><span>nodes</span>
@@ -190,6 +194,7 @@ export function ShowcaseApp() {
             <button type="button" onClick={() => focus("Maya")}>Who researched the company?</button>
             <button type="button" onClick={() => focus("Series A")}>Show funding evidence</button>
             <button type="button" onClick={() => focus("HIPAA")}>Open risk questions</button>
+            <button type="button" onClick={() => focus("CardioNova funding evidence")}>Trace the deck claim</button>
           </div>
         </aside>
 

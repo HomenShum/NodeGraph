@@ -5,6 +5,8 @@ export * from "./semanticGraphFilters";
 export * from "./semanticGraphClusters";
 export * from "./semanticGraphLayout";
 export * from "./semanticGraphSelectors";
+export * from "./semanticGraphPaths";
+export * from "./neo4jAdapter";
 export * from "./relationshipReview";
 export * from "./EntityGraphDetailPanel";
 export * from "./NodeGraphAgentPanel";

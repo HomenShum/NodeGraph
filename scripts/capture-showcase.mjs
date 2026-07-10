@@ -14,7 +14,7 @@ mkdirSync(outDir, { recursive: true });
 rmSync(frameDir, { recursive: true, force: true });
 mkdirSync(frameDir, { recursive: true });
 
-const server = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "example:dev", "--", "--strictPort"], {
+const server = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "example:dev", "--", "--port", port, "--strictPort"], {
   cwd: root,
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, BROWSER: "none" },
@@ -35,6 +35,7 @@ try {
     async () => page.getByRole("button", { name: /CardioNova diligence/i }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Who researched the company?" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Show funding evidence" }).click(),
+    async () => page.locator(".story").getByRole("button", { name: "Trace the deck claim" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Open risk questions" }).click(),
     async () => page.getByPlaceholder(/Search CardioNova/i).fill("source"),
     async () => page.getByText("Evidence-backed only").click(),

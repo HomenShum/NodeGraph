@@ -11,6 +11,8 @@ import {
   type SemanticGraphRef,
   type SemanticGraphStatus,
   type SemanticGraphViewModel,
+  type DeckClaimStatus,
+  type DeckStoryboardStatus,
 } from "./semanticGraphTypes";
 
 const DEFAULT_MAX_ROWS_PER_SHEET = 80;
@@ -221,6 +223,18 @@ const ensureArtifactNode = (graph: MutableGraph, artifact: Artifact): SemanticGr
   weight: artifact.kind === "sheet" ? 3 : 2,
   meta: { artifactKind: artifact.kind, version: artifact.version },
 });
+
+const deckStatus = (status: DeckStoryboardStatus): SemanticGraphStatus => {
+  if (status === "approved") return "source_backed";
+  if (status === "needs_review") return "needs_review";
+  return "manual";
+};
+
+const claimStatus = (status: DeckClaimStatus): SemanticGraphStatus => {
+  if (status === "verified") return "source_backed";
+  if (status === "needs_review") return "needs_review";
+  return "manual";
+};
 
 const inferFactKind = (column: DataframeColumn, text: string): SemanticGraphNodeKind => {
   if (columnMatches(column, PROJECT_RE)) return "project";
@@ -709,6 +723,191 @@ const deriveProposals = (graph: MutableGraph, input: SemanticGraphInput): void =
   }
 };
 
+const findNodeWithRef = (
+  graph: MutableGraph,
+  predicate: (ref: SemanticGraphRef) => boolean,
+  kind?: SemanticGraphNodeKind,
+): SemanticGraphNode | undefined => [...graph.nodes.values()].find((node) => (!kind || node.kind === kind) && node.refs.some(predicate));
+
+const deriveDeckStoryboards = (graph: MutableGraph, input: SemanticGraphInput): void => {
+  for (const deck of input.decks ?? []) {
+    const deckNode = ensureNode(graph, {
+      id: nodeId("deck", deck.deckId),
+      kind: "deck",
+      label: truncate(deck.title, LABEL_LIMIT),
+      subtitle: `${deck.slides.length} storyboard slides`,
+      status: deckStatus(deck.storyboardStatus),
+      refs: [{ deckId: deck.deckId, label: "storyboard" }],
+      weight: 3,
+      meta: { planHash: deck.planHash, version: deck.version },
+    });
+
+    for (const slide of deck.slides) {
+      const slideNode = ensureNode(graph, {
+        id: scopedNodeId("deck_slide", deck.deckId, slide.slideId),
+        kind: "deck_slide",
+        label: truncate(slide.title, LABEL_LIMIT),
+        subtitle: slide.purpose,
+        status: deckStatus(slide.status),
+        refs: [{ deckId: deck.deckId, slideId: slide.slideId, artifactId: slide.sourceArtifactIds[0], label: "storyboard slide" }],
+        weight: 2,
+        meta: { claimCount: slide.claims.length, unresolvedCount: slide.unresolvedGaps.length },
+      });
+      ensureEdge(graph, {
+        id: edgeId("belongs_to", deckNode.id, slideNode.id, slide.slideId),
+        source: deckNode.id,
+        target: slideNode.id,
+        kind: "belongs_to",
+        label: "contains slide",
+        status: slideNode.status,
+        refs: [{ deckId: deck.deckId, slideId: slide.slideId }],
+      });
+
+      for (const sourceArtifactId of slide.sourceArtifactIds) {
+        const sourceArtifact = input.artifacts.find((artifact) => artifact.id === sourceArtifactId);
+        const sourceArtifactNode = sourceArtifact ? ensureArtifactNode(graph, sourceArtifact) : ensureNode(graph, {
+          id: nodeId("artifact", sourceArtifactId),
+          kind: "artifact",
+          label: sourceArtifactId,
+          subtitle: "source artifact",
+          status: "graph_inferred",
+          refs: [{ artifactId: sourceArtifactId }],
+        });
+        ensureEdge(graph, {
+          id: edgeId("derived_from", slideNode.id, sourceArtifactNode.id, `${deck.deckId}:${slide.slideId}:${sourceArtifactId}`),
+          source: slideNode.id,
+          target: sourceArtifactNode.id,
+          kind: "derived_from",
+          label: "uses artifact",
+          status: slideNode.status,
+          refs: [{ deckId: deck.deckId, slideId: slide.slideId, artifactId: sourceArtifactId, artifactTitle: sourceArtifact?.title }],
+        });
+      }
+
+      for (const claim of slide.claims) {
+        const status = claimStatus(claim.status);
+        const claimNode = ensureNode(graph, {
+          id: scopedNodeId("deck_claim", deck.deckId, claim.claimId),
+          kind: "deck_claim",
+          label: truncate(claim.text, LABEL_LIMIT),
+          subtitle: claim.status === "verified" ? "verified deck claim" : claim.status === "needs_review" ? "deck claim needs review" : "manual deck claim",
+          status,
+          refs: [{
+            deckId: deck.deckId,
+            slideId: slide.slideId,
+            claimId: claim.claimId,
+            artifactId: claim.sourceArtifactId,
+            traceId: claim.traceId,
+            proposalId: claim.proposalId,
+            evidenceId: claim.evidenceId,
+            label: "deck claim",
+          }],
+          weight: claim.status === "verified" ? 3 : 2,
+        });
+        ensureEdge(graph, {
+          id: edgeId("belongs_to", slideNode.id, claimNode.id, claim.claimId),
+          source: slideNode.id,
+          target: claimNode.id,
+          kind: "belongs_to",
+          label: "contains claim",
+          status,
+          refs: [{ deckId: deck.deckId, slideId: slide.slideId, claimId: claim.claimId }],
+        });
+
+        if (claim.sourceArtifactId) {
+          const sourceArtifact = input.artifacts.find((artifact) => artifact.id === claim.sourceArtifactId);
+          const sourceArtifactNode = sourceArtifact ? ensureArtifactNode(graph, sourceArtifact) : ensureNode(graph, {
+            id: nodeId("artifact", claim.sourceArtifactId),
+            kind: "artifact",
+            label: claim.sourceArtifactId,
+            subtitle: "source artifact",
+            status: "graph_inferred",
+            refs: [{ artifactId: claim.sourceArtifactId }],
+          });
+          ensureEdge(graph, {
+            id: edgeId("derived_from", claimNode.id, sourceArtifactNode.id, claim.claimId),
+            source: claimNode.id,
+            target: sourceArtifactNode.id,
+            kind: "derived_from",
+            label: "draws from artifact",
+            status,
+            refs: [{ deckId: deck.deckId, slideId: slide.slideId, claimId: claim.claimId, artifactId: claim.sourceArtifactId, artifactTitle: sourceArtifact?.title }],
+            weight: claim.status === "verified" ? 2 : 1,
+          });
+        }
+
+        if (claim.evidenceId) {
+          const evidenceNode = findNodeWithRef(graph, (ref) => ref.evidenceId === claim.evidenceId);
+          if (evidenceNode) {
+            ensureEdge(graph, {
+              id: edgeId("supported_by", claimNode.id, evidenceNode.id, claim.evidenceId),
+              source: claimNode.id,
+              target: evidenceNode.id,
+              kind: "supported_by",
+              label: "supported by evidence",
+              status: evidenceNode.status,
+              refs: [{ deckId: deck.deckId, slideId: slide.slideId, claimId: claim.claimId, evidenceId: claim.evidenceId }],
+              weight: 2,
+            });
+          }
+        }
+
+        if (claim.traceId) {
+          const traceNode = findNodeWithRef(graph, (ref) => ref.traceId === claim.traceId, "trace_step");
+          if (traceNode) {
+            ensureEdge(graph, {
+              id: edgeId("derived_from", claimNode.id, traceNode.id, claim.traceId),
+              source: claimNode.id,
+              target: traceNode.id,
+              kind: "derived_from",
+              label: "derived from trace",
+              status: strongestStatus(status, traceNode.status),
+              refs: [{ deckId: deck.deckId, slideId: slide.slideId, claimId: claim.claimId, traceId: claim.traceId }],
+            });
+          }
+        }
+
+        if (claim.proposalId) {
+          const proposalNode = findNodeWithRef(graph, (ref) => ref.proposalId === claim.proposalId, "proposal");
+          if (proposalNode) {
+            ensureEdge(graph, {
+              id: edgeId("reviewed", claimNode.id, proposalNode.id, claim.proposalId),
+              source: claimNode.id,
+              target: proposalNode.id,
+              kind: "reviewed",
+              label: "needs proposal review",
+              status: "needs_review",
+              refs: [{ deckId: deck.deckId, slideId: slide.slideId, claimId: claim.claimId, proposalId: claim.proposalId }],
+              weight: 2,
+            });
+          }
+        }
+      }
+
+      for (const gap of slide.unresolvedGaps.slice(0, 6)) {
+        const question = ensureNode(graph, {
+          id: scopedNodeId("open_question", deck.deckId, `${slide.slideId}:${gap}`),
+          kind: "open_question",
+          label: truncate(gap, LABEL_LIMIT),
+          subtitle: slide.title,
+          status: "needs_review",
+          refs: [{ deckId: deck.deckId, slideId: slide.slideId, artifactId: slide.sourceArtifactIds[0], label: "deck gap" }],
+          weight: 2,
+        });
+        ensureEdge(graph, {
+          id: edgeId("reviewed", slideNode.id, question.id, gap),
+          source: slideNode.id,
+          target: question.id,
+          kind: "reviewed",
+          label: "needs deck evidence",
+          status: "needs_review",
+          refs: [{ deckId: deck.deckId, slideId: slide.slideId, artifactId: slide.sourceArtifactIds[0] }],
+        });
+      }
+    }
+  }
+};
+
 const deriveSessions = (graph: MutableGraph, input: SemanticGraphInput): void => {
   for (const session of input.sessions ?? []) {
     const status: SemanticGraphStatus = session.status === "blocked" ? "failed" : session.status === "working" || session.status === "drafting" ? "running" : "graph_inferred";
@@ -821,7 +1020,7 @@ const finalizeGraph = (graph: MutableGraph, input: SemanticGraphInput, fallbackD
 };
 
 export function buildSemanticGraph(input: SemanticGraphInput): SemanticGraphViewModel {
-  if (input.artifacts.length === 0 && input.fallbackDemo) return fallbackGraph(input);
+  if (input.artifacts.length === 0 && (input.decks?.length ?? 0) === 0 && input.fallbackDemo) return fallbackGraph(input);
   const graph: MutableGraph = {
     nodes: new Map(),
     edges: new Map(),
@@ -867,6 +1066,7 @@ export function buildSemanticGraph(input: SemanticGraphInput): SemanticGraphView
   deriveTextArtifacts(graph, input.artifacts);
   deriveTraces(graph, input);
   deriveProposals(graph, input);
+  deriveDeckStoryboards(graph, input);
   deriveSessions(graph, input);
 
   return finalizeGraph(graph, input, false);

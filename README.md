@@ -26,6 +26,7 @@ Edges use semantic verbs such as `researched`, `cited`, `supported_by`, `authore
 ```ts
 import {
   buildGraphRelationshipReviewPlan,
+  buildNeo4jUpsertPlan,
   buildSemanticGraph,
   createNodeGraphAgentTools,
   selectSemanticGraphCluster,
@@ -48,6 +49,7 @@ const clusters = summarizeSemanticGraphClusters(graph);
 const clusterView = selectSemanticGraphCluster(graph, clusters[0]?.id ?? null, { neighborDepth: 1, maxNodes: 80 });
 const relationshipReview = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
 const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
+const neo4jPlan = buildNeo4jUpsertPlan(graph, "room-1");
 ```
 
 `buildGraphRelationshipReviewPlan` is the public version of NodeRoom's graph
@@ -59,6 +61,12 @@ JSON-friendly receipts for audits, readme demos, Streamlit apps, or agent tools.
 runtime clusters by connected evidence and review relevance. `selectSemanticGraphCluster`
 isolates one cluster and can add zero, one, or two bounded neighbor rings for
 responsive React, Neo4j-style, or Streamlit exploration.
+
+Deck storyboards can be passed in `buildSemanticGraph({ decks })`. Slides,
+claims, source artifacts, trace receipts, proposals, cited evidence, and open
+evidence gaps become first-class nodes. A selected node also returns ranked
+multi-hop `paths`, so a reviewer can see the strongest person-to-company,
+claim-to-source, and agent-to-artifact routes instead of only immediate links.
 
 ## NodeAgent Bridge
 
@@ -112,7 +120,7 @@ The same clips are also listed from `feature-proof-studio` as public proof examp
 
 ## Streamlit And Neo4j-Style Graphs
 
-NodeGraph already uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. It is not a Neo4j database or Cypher runtime, but its output can be adapted to Neo4j, NVL, NeoVis, PyVis, or Streamlit.
+NodeGraph uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. The exported `buildNeo4jUpsertPlan` produces parameterized, APOC-free Cypher batches that work with a standard Neo4j driver session; NodeGraph remains storage-neutral and does not embed database credentials or own a Neo4j server.
 
 The Streamlit example defaults to `st-link-analysis`, a Cytoscape.js community component with draggable nodes, pan/zoom controls, fullscreen graph exploration, neighborhood highlighting, and selected-element metadata. PyVis remains available as a fallback renderer from the sidebar.
 
