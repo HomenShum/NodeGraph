@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Actor, Artifact, DataframeColumn, Element, Proposal, TraceEvent } from "../src/types";
 import { buildSemanticGraph } from "../src/semanticGraph";
 import { applySemanticGraphFilters } from "../src/semanticGraphFilters";
+import { selectSemanticGraphCluster, summarizeSemanticGraphClusters } from "../src/semanticGraphClusters";
 import { layoutSemanticGraph } from "../src/semanticGraphLayout";
 import { selectSemanticNeighborhood } from "../src/semanticGraphSelectors";
 import { buildGraphRelationshipReviewPlan, graphRelationshipReviewFileName, graphRelationshipReviewJson } from "../src/relationshipReview";
@@ -204,6 +205,19 @@ describe("semantic entity graph", () => {
     const second = layoutSemanticGraph(graph, { selectedId: company!.id });
     expect(first.get(company!.id)).toEqual({ x: 0, y: 0 });
     expect([...first.entries()]).toEqual([...second.entries()]);
+  });
+
+  it("ranks clusters and isolates a cluster with bounded neighbor expansion", () => {
+    const graph = buildSemanticGraph({ roomId: "room-1", artifacts: [researchSheet, notebook], traces: [trace], proposals: [proposal] });
+    const summary = summarizeSemanticGraphClusters(graph).find((cluster) => cluster.kind === "company" && cluster.label.includes("CardioNova"));
+    expect(summary).toBeTruthy();
+
+    const isolated = selectSemanticGraphCluster(graph, summary!.id, { neighborDepth: 0 });
+    const expanded = selectSemanticGraphCluster(graph, summary!.id, { neighborDepth: 1, maxNodes: 40 });
+    expect(isolated.nodes).toHaveLength(summary!.nodeCount);
+    expect(expanded.nodes.length).toBeGreaterThanOrEqual(isolated.nodes.length);
+    expect(expanded.nodes.length).toBeLessThanOrEqual(40);
+    expect(expanded.edges.every((edge) => expanded.nodes.some((node) => node.id === edge.source) && expanded.nodes.some((node) => node.id === edge.target))).toBe(true);
   });
 
   it("keeps a 250-plus-node fixture derivable, filterable, and layoutable", () => {

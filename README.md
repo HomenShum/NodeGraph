@@ -28,7 +28,9 @@ import {
   buildGraphRelationshipReviewPlan,
   buildSemanticGraph,
   createNodeGraphAgentTools,
+  selectSemanticGraphCluster,
   selectSemanticNeighborhood,
+  summarizeSemanticGraphClusters,
 } from "nodegraph";
 
 const graph = buildSemanticGraph({
@@ -42,6 +44,8 @@ const graph = buildSemanticGraph({
 
 const company = graph.nodes.find((node) => node.kind === "company");
 const selection = selectSemanticNeighborhood(graph, company?.id, 2);
+const clusters = summarizeSemanticGraphClusters(graph);
+const clusterView = selectSemanticGraphCluster(graph, clusters[0]?.id ?? null, { neighborDepth: 1, maxNodes: 80 });
 const relationshipReview = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
 const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
 ```
@@ -50,6 +54,11 @@ const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
 confirmation layer. It classifies graph edges as source-backed confirmations or
 relationships that still need reviewer confirmation, and returns deterministic
 JSON-friendly receipts for audits, readme demos, Streamlit apps, or agent tools.
+
+`summarizeSemanticGraphClusters` ranks person, company, evidence, artifact, and
+runtime clusters by connected evidence and review relevance. `selectSemanticGraphCluster`
+isolates one cluster and can add zero, one, or two bounded neighbor rings for
+responsive React, Neo4j-style, or Streamlit exploration.
 
 ## NodeAgent Bridge
 
