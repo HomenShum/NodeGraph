@@ -1,6 +1,6 @@
 {
   "name": "nodegraph",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Semantic relationship graph primitives extracted from NodeRoom.",
   "type": "module",
   "license": "MIT",
@@ -17,7 +17,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "docs",
+    "docs/*.md",
+    "docs/media/*.gif",
     "README.md",
     "LICENSE"
   ],
