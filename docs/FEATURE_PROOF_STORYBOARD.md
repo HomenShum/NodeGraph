@@ -4,11 +4,11 @@ This storyboard is the first step before refreshing the NodeGraph README clips.
 
 ## Premise
 
-NodeGraph should prove that a NodeRoom-style semantic graph is more than a static diagram. It should show evidence-backed entities, people, projects, achievements, traces, and review gaps as an interactive working surface that NodeAgent can query.
+NodeGraph should prove that a NodeRoom-style semantic graph is more than a static diagram. It should show evidence-backed entities, people, projects, achievements, deck claims, traces, and review gaps as an interactive working surface that NodeAgent can query.
 
 ## Viewer Question
 
-Can a user inspect a company, see who researched it, identify supporting evidence, and ask NodeAgent for relevant graph context without leaving the graph surface?
+Can a user inspect a company, see who researched it, follow a deck claim to supporting evidence, and ask NodeAgent for relevant graph context without leaving the graph surface?
 
 ## Comparison Axis
 
@@ -29,7 +29,10 @@ The React clip must show:
 - Draggable graph nodes and relationship labels.
 - Evidence-backed filtering.
 - Person/company/source/trace/project clusters.
+- Deck slide and claim paths back to sources, traces, and unresolved evidence.
 - Graph agent panel prompts for evidence, review gaps, and who researched the company.
+- Drag or pin a node, reload, and show that the layout persists.
+- Export the canonical NodeGraph JSON and Neo4j sync-plan controls.
 
 The Streamlit clip must show:
 
@@ -52,7 +55,7 @@ A viewer should choose the React package path when embedding NodeGraph in an app
 React showcase:
 
 ```text
-CardioNova diligence map -> who researched -> funding evidence -> risk questions -> source search -> evidence-only filter
+CardioNova diligence map -> drag/pin CardioNova -> reload persistence -> who researched -> funding evidence -> deck claim path -> risk questions -> evidence-only filter -> JSON/Neo4j export controls
 ```
 
 Streamlit showcase:

@@ -14,7 +14,7 @@ mkdirSync(outDir, { recursive: true });
 rmSync(frameDir, { recursive: true, force: true });
 mkdirSync(frameDir, { recursive: true });
 
-const server = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "example:dev", "--", "--strictPort"], {
+const server = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "example:dev", "--", "--port", port, "--strictPort"], {
   cwd: root,
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, BROWSER: "none" },
@@ -30,11 +30,19 @@ try {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 840 }, deviceScaleFactor: 1 });
   await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await page.evaluate(() => localStorage.removeItem("nodegraph:showcase:layout:v1"));
+  await page.reload({ waitUntil: "networkidle" });
 
   const frames = [
     async () => page.getByRole("button", { name: /CardioNova diligence/i }).click(),
+    async () => page.getByRole("button", { name: "Pin selected node" }).click(),
+    async () => {
+      await page.reload({ waitUntil: "networkidle" });
+      await page.getByText("1 pinned", { exact: true }).waitFor();
+    },
     async () => page.locator(".story").getByRole("button", { name: "Who researched the company?" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Show funding evidence" }).click(),
+    async () => page.locator(".story").getByRole("button", { name: "Trace the deck claim" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Open risk questions" }).click(),
     async () => page.getByPlaceholder(/Search CardioNova/i).fill("source"),
     async () => page.getByText("Evidence-backed only").click(),

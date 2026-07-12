@@ -24,7 +24,18 @@ Edges use semantic verbs such as `researched`, `cited`, `supported_by`, `authore
 ## Usage
 
 ```ts
-import { buildSemanticGraph, selectSemanticNeighborhood, createNodeGraphAgentTools } from "nodegraph";
+import {
+  buildGraphRelationshipReviewPlan,
+  buildNeo4jSyncPlan,
+  buildNeo4jUpsertPlan,
+  buildSemanticGraph,
+  createNodeGraphAgentTools,
+  exportNodeGraphDocument,
+  InMemoryNodeGraphAdapter,
+  selectSemanticGraphCluster,
+  selectSemanticNeighborhood,
+  summarizeSemanticGraphClusters,
+} from "nodegraph";
 
 const graph = buildSemanticGraph({
   roomId: "room-1",
@@ -37,8 +48,44 @@ const graph = buildSemanticGraph({
 
 const company = graph.nodes.find((node) => node.kind === "company");
 const selection = selectSemanticNeighborhood(graph, company?.id, 2);
+const clusters = summarizeSemanticGraphClusters(graph);
+const clusterView = selectSemanticGraphCluster(graph, clusters[0]?.id ?? null, { neighborDepth: 1, maxNodes: 80 });
+const relationshipReview = buildGraphRelationshipReviewPlan(graph, "room-1:semantic-graph");
 const graphTools = createNodeGraphAgentTools({ getGraph: () => graph });
+const neo4jPlan = buildNeo4jUpsertPlan(graph, "room-1");
+const document = exportNodeGraphDocument(graph, {
+  graphId: "room-1",
+  provenance: { source: "noderoom", sourceId: "room-1" },
+  layout: { positions, pinnedNodeIds },
+});
+const memory = new InMemoryNodeGraphAdapter();
+const receipt = memory.importDocument(document);
+const incrementalNeo4jPlan = buildNeo4jSyncPlan(document, previousDocument, { pruneMissing: true });
 ```
+
+The `nodegraph.document` v1 contract is the portable boundary shared by the
+React showcase, Streamlit exports, NodeRoom, in-memory storage, and Neo4j sync.
+Every document carries a deterministic graph revision and source provenance;
+optional layout positions and pinned node ids survive reloads and JSON
+round-trips. `diffNodeGraphDocuments` reports exact node, relationship, and
+cluster upserts/removals so hosts can inspect an incremental change before
+applying it.
+
+`buildGraphRelationshipReviewPlan` is the public version of NodeRoom's graph
+confirmation layer. It classifies graph edges as source-backed confirmations or
+relationships that still need reviewer confirmation, and returns deterministic
+JSON-friendly receipts for audits, readme demos, Streamlit apps, or agent tools.
+
+`summarizeSemanticGraphClusters` ranks person, company, evidence, artifact, and
+runtime clusters by connected evidence and review relevance. `selectSemanticGraphCluster`
+isolates one cluster and can add zero, one, or two bounded neighbor rings for
+responsive React, Neo4j-style, or Streamlit exploration.
+
+Deck storyboards can be passed in `buildSemanticGraph({ decks })`. Slides,
+claims, source artifacts, trace receipts, proposals, cited evidence, and open
+evidence gaps become first-class nodes. A selected node also returns ranked
+multi-hop `paths`, so a reviewer can see the strongest person-to-company,
+claim-to-source, and agent-to-artifact routes instead of only immediate links.
 
 ## NodeAgent Bridge
 
@@ -57,7 +104,7 @@ npm run build
 
 ## Example App
 
-The local showcase app demonstrates the same graph relationships NodeRoom uses: people researching companies, evidence-backed rows, traces, proposals, sessions, and clustered project or achievement context.
+The local showcase app demonstrates the same graph relationships NodeRoom uses: people researching companies, evidence-backed rows, traces, proposals, sessions, and clustered project or achievement context. Dragged or explicitly pinned nodes persist across reloads. The toolbar exports the canonical JSON document or a parameterized Neo4j sync plan and can import a prior NodeGraph document.
 
 ```bash
 npm run example:dev
@@ -92,7 +139,7 @@ The same clips are also listed from `feature-proof-studio` as public proof examp
 
 ## Streamlit And Neo4j-Style Graphs
 
-NodeGraph already uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. It is not a Neo4j database or Cypher runtime, but its output can be adapted to Neo4j, NVL, NeoVis, PyVis, or Streamlit.
+NodeGraph uses a Neo4j-style property graph shape: stable node ids, typed node kinds, typed edge relationships, properties, statuses, and provenance refs. `buildNeo4jUpsertPlan` provides a non-destructive full upsert. `buildNeo4jSyncPlan` consumes versioned documents and emits only changed records, with host-controlled stale pruning. Both produce parameterized, APOC-free Cypher batches that work with a standard Neo4j driver session; NodeGraph remains storage-neutral and does not embed database credentials or own a Neo4j server.
 
 The Streamlit example defaults to `st-link-analysis`, a Cytoscape.js community component with draggable nodes, pan/zoom controls, fullscreen graph exploration, neighborhood highlighting, and selected-element metadata. PyVis remains available as a fallback renderer from the sidebar.
 

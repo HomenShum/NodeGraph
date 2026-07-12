@@ -1,18 +1,25 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { Background, Controls, Handle, MarkerType, MiniMap, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
-import { Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Background, Controls, Handle, MarkerType, MiniMap, Position, ReactFlow, type Edge, type Node, type NodeChange, type NodeProps } from "@xyflow/react";
+import { Download, Pin, PinOff, RotateCcw, Search, Sparkles, Upload } from "lucide-react";
 import {
   EntityGraphDetailPanel,
   NodeGraphAgentPanel,
   applySemanticGraphFilters,
+  buildNeo4jSyncPlan,
   buildSemanticGraph,
   createNodeGraphAgentTools,
+  exportNodeGraphDocument,
   layoutSemanticGraph,
+  neo4jSyncPlanJson,
+  nodeGraphDocumentJson,
+  parseNodeGraphDocument,
   selectSemanticNeighborhood,
   type NodeGraphAgentPanelRequest,
+  type NodeGraphDocument,
+  type SemanticGraphPosition,
   type SemanticGraphNodeKind,
 } from "../../../src";
-import { agent, companyResearch, members, notebook, proposals, traceEvents } from "./demoData";
+import { agent, companyResearch, members, notebook, proposals, storyboard, traceEvents } from "./demoData";
 
 const COLORS: Record<string, string> = {
   company: "#5fd0a0",
@@ -22,6 +29,9 @@ const COLORS: Record<string, string> = {
   source: "#ffd16a",
   evidence_fact: "#ffd16a",
   artifact: "#6aa9ff",
+  deck: "#f38b6d",
+  deck_slide: "#f2b36f",
+  deck_claim: "#e8d36f",
   spreadsheet_row: "#6aa9ff",
   notebook_block: "#b794f4",
   trace_step: "#60d0e0",
@@ -32,12 +42,37 @@ const COLORS: Record<string, string> = {
   event: "#f0a040",
 };
 
-const FILTER_KINDS: SemanticGraphNodeKind[] = ["company", "person", "funding", "source", "evidence_fact", "trace_step", "open_question", "agent_job"];
+const FILTER_KINDS: SemanticGraphNodeKind[] = ["company", "person", "deck", "deck_claim", "source", "evidence_fact", "trace_step", "open_question", "agent_job"];
+const LAYOUT_STORAGE_KEY = "nodegraph:showcase:layout:v1";
+
+type SavedLayout = { positions: Record<string, SemanticGraphPosition>; pinnedNodeIds: string[] };
+
+function loadSavedLayout(): SavedLayout {
+  if (typeof window === "undefined") return { positions: {}, pinnedNodeIds: [] };
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(LAYOUT_STORAGE_KEY) ?? "null") as Partial<SavedLayout> | null;
+    return {
+      positions: parsed?.positions && typeof parsed.positions === "object" ? parsed.positions : {},
+      pinnedNodeIds: Array.isArray(parsed?.pinnedNodeIds) ? parsed.pinnedNodeIds.filter((id): id is string => typeof id === "string") : [],
+    };
+  } catch {
+    return { positions: {}, pinnedNodeIds: [] };
+  }
+}
+
+function downloadText(fileName: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json;charset=utf-8" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 function GraphNode({ data }: NodeProps) {
-  const d = data as unknown as { label: string; kind: string; color: string; dimmed: boolean; selected: boolean };
+  const d = data as unknown as { label: string; kind: string; color: string; dimmed: boolean; selected: boolean; pinned: boolean };
   return (
-    <div className={`ng-node ${d.selected ? "selected" : ""}`} style={{ "--ng-color": d.color, opacity: d.dimmed ? 0.18 : 1 } as CSSProperties}>
+    <div className={`ng-node ${d.selected ? "selected" : ""}${d.pinned ? " pinned" : ""}`} style={{ "--ng-color": d.color, opacity: d.dimmed ? 0.18 : 1 } as CSSProperties}>
       <Handle id="target" type="target" position={Position.Left} />
       <span className="dot" />
       <span>{d.label}</span>
@@ -53,15 +88,25 @@ export function ShowcaseApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [evidenceOnly, setEvidenceOnly] = useState(false);
-  const graph = useMemo(() => buildSemanticGraph({
+  const [importedDocument, setImportedDocument] = useState<NodeGraphDocument | null>(null);
+  const initialLayout = useMemo(loadSavedLayout, []);
+  const [manualPositions, setManualPositions] = useState<Record<string, SemanticGraphPosition>>(initialLayout.positions);
+  const [pinnedNodeIds, setPinnedNodeIds] = useState<Set<string>>(() => new Set(initialLayout.pinnedNodeIds));
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const baseGraph = useMemo(() => buildSemanticGraph({
     roomId: "showcase-room",
     artifacts: [companyResearch, notebook],
     members,
     traces: traceEvents,
     proposals,
+    decks: [storyboard],
     sessions: [{ id: "session-1", roomId: "showcase-room", agentId: agent.id, agentName: agent.name, scope: "public", status: "working", lastAction: "verifying CardioNova evidence", updatedAt: 12 }],
     maxRowsPerSheet: 24,
   }), []);
+  const graph = importedDocument?.graph ?? baseGraph;
+  useEffect(() => {
+    window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify({ positions: manualPositions, pinnedNodeIds: [...pinnedNodeIds].sort() }));
+  }, [manualPositions, pinnedNodeIds]);
   const filtered = useMemo(() => applySemanticGraphFilters(graph, { query, evidenceBackedOnly: evidenceOnly }), [graph, query, evidenceOnly]);
   const nodeIds = useMemo(() => new Set(filtered.nodes.map((node) => node.id)), [filtered]);
   const selected = nodeIds.has(selectedId ?? "") ? selectedId : filtered.nodes.find((node) => node.kind === "company" && node.label === "CardioNova")?.id ?? null;
@@ -92,13 +137,14 @@ export function ShowcaseApp() {
     return {
       id: node.id,
       type: "semantic",
-      position: positions.get(node.id) ?? { x: 0, y: 0 },
+      position: manualPositions[node.id] ?? positions.get(node.id) ?? { x: 0, y: 0 },
       data: {
         label,
         kind: node.kind,
         color: COLORS[node.kind] ?? "#94a3b8",
         dimmed: selection.nodeIds.size > 0 && !selection.nodeIds.has(node.id),
         selected: selected === node.id,
+        pinned: pinnedNodeIds.has(node.id),
       },
       draggable: true,
     };
@@ -127,6 +173,45 @@ export function ShowcaseApp() {
       const node = graph.nodes.find((item) => item.label.toLowerCase().includes(label.toLowerCase()));
       setSelectedId(node?.id ?? null);
     }, 40);
+  };
+  const exportDocument = () => exportNodeGraphDocument(graph, {
+    graphId: importedDocument?.graphId ?? "showcase-room",
+    generatedAt: Date.now(),
+    provenance: { source: "nodegraph_showcase", sourceId: "react-showcase" },
+    layout: { positions: manualPositions, pinnedNodeIds: [...pinnedNodeIds] },
+  });
+  const onNodesChange = (changes: NodeChange[]) => {
+    const positionChanges = changes.filter((change): change is Extract<NodeChange, { type: "position" }> => change.type === "position" && Boolean(change.position));
+    if (!positionChanges.length) return;
+    setManualPositions((previous) => ({
+      ...previous,
+      ...Object.fromEntries(positionChanges.map((change) => [change.id, { x: change.position!.x, y: change.position!.y }])),
+    }));
+    setPinnedNodeIds((previous) => new Set([...previous, ...positionChanges.map((change) => change.id)]));
+  };
+  const toggleSelectedPin = () => {
+    if (!selected) return;
+    setPinnedNodeIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(selected)) {
+        next.delete(selected);
+        setManualPositions((positionsValue) => Object.fromEntries(Object.entries(positionsValue).filter(([nodeId]) => nodeId !== selected)));
+      } else {
+        next.add(selected);
+        const selectedPosition = positions.get(selected);
+        if (selectedPosition) setManualPositions((positionsValue) => ({ ...positionsValue, [selected]: selectedPosition }));
+      }
+      return next;
+    });
+  };
+  const importGraph = async (file: File | undefined) => {
+    if (!file) return;
+    const document = parseNodeGraphDocument(await file.text());
+    setImportedDocument(document);
+    setManualPositions(document.layout?.positions ?? {});
+    setPinnedNodeIds(new Set(document.layout?.pinnedNodeIds ?? []));
+    setSelectedId(null);
+    setQuery("");
   };
   const runShowcaseNodeAgent = async (request: NodeGraphAgentPanelRequest) => {
     const tools = createNodeGraphAgentTools({
@@ -162,7 +247,7 @@ export function ShowcaseApp() {
         <div>
           <span className="eyebrow"><Sparkles size={14} /> NodeGraph</span>
           <h1>Evidence-backed entity maps for agent rooms.</h1>
-          <p>Derive people, companies, spreadsheet rows, notebook blocks, traces, proposals, and sources from working product data.</p>
+          <p>Derive people, companies, deck claims, spreadsheet rows, notebook blocks, traces, proposals, and sources from working product data.</p>
         </div>
         <div className="heroStats">
           <strong>{graph.stats.nodes}</strong><span>nodes</span>
@@ -190,10 +275,22 @@ export function ShowcaseApp() {
             <button type="button" onClick={() => focus("Maya")}>Who researched the company?</button>
             <button type="button" onClick={() => focus("Series A")}>Show funding evidence</button>
             <button type="button" onClick={() => focus("HIPAA")}>Open risk questions</button>
+            <button type="button" onClick={() => focus("CardioNova funding evidence")}>Trace the deck claim</button>
           </div>
         </aside>
 
         <div className="graphPane">
+          <div className="graphToolbar" role="toolbar" aria-label="NodeGraph data and layout controls">
+            <button type="button" onClick={() => downloadText("nodegraph-showcase.json", nodeGraphDocumentJson(exportDocument()))} title="Export NodeGraph JSON"><Download size={14} /> JSON</button>
+            <button type="button" onClick={() => downloadText("nodegraph-neo4j-sync.json", neo4jSyncPlanJson(buildNeo4jSyncPlan(exportDocument())))} title="Export Neo4j sync plan"><Download size={14} /> Neo4j</button>
+            <button type="button" onClick={() => importInputRef.current?.click()} title="Import NodeGraph JSON"><Upload size={14} /> Import</button>
+            <input ref={importInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => { void importGraph(event.target.files?.[0]); event.target.value = ""; }} />
+            <button type="button" onClick={toggleSelectedPin} disabled={!selected} title={selected && pinnedNodeIds.has(selected) ? "Unpin selected node" : "Pin selected node"} aria-label={selected && pinnedNodeIds.has(selected) ? "Unpin selected node" : "Pin selected node"}>
+              {selected && pinnedNodeIds.has(selected) ? <PinOff size={14} /> : <Pin size={14} />}
+            </button>
+            <span>{pinnedNodeIds.size} pinned</span>
+            <button type="button" onClick={() => { setManualPositions({}); setPinnedNodeIds(new Set()); }} title="Reset saved layout" aria-label="Reset saved graph layout"><RotateCcw size={14} /></button>
+          </div>
           <ReactFlow
             key={`${query}-${evidenceOnly}-${selected ?? "none"}-${renderGraph.nodes.length}`}
             nodes={nodes}
@@ -204,6 +301,7 @@ export function ShowcaseApp() {
             minZoom={0.15}
             maxZoom={1.7}
             nodesConnectable={false}
+            onNodesChange={onNodesChange}
             onNodeClick={(_, node) => setSelectedId(node.id)}
             colorMode="dark"
             proOptions={{ hideAttribution: true }}

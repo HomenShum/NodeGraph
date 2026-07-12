@@ -4,6 +4,9 @@ export type SemanticGraphNodeKind =
   | "person"
   | "company"
   | "artifact"
+  | "deck"
+  | "deck_slide"
+  | "deck_claim"
   | "spreadsheet_row"
   | "notebook_block"
   | "source"
@@ -52,6 +55,9 @@ export interface SemanticGraphRef {
   columnId?: string;
   traceId?: string;
   proposalId?: string;
+  deckId?: string;
+  slideId?: string;
+  claimId?: string;
   sourceUrl?: string;
   evidenceId?: string;
   actorId?: string;
@@ -126,6 +132,7 @@ export interface SemanticGraphInput {
   members?: Member[];
   traces?: TraceEvent[];
   proposals?: Proposal[];
+  decks?: DeckStoryboard[];
   sessions?: AgentSession[];
   fallbackDemo?: boolean;
   maxRowsPerSheet?: number;
@@ -150,12 +157,66 @@ export interface SemanticGraphSelectionSection {
   edges: SemanticGraphEdge[];
 }
 
+export interface SemanticGraphConnectionPath {
+  id: string;
+  label: string;
+  nodeIds: string[];
+  edgeIds: string[];
+  score: number;
+  status: SemanticGraphStatus;
+  refs: SemanticGraphRef[];
+}
+
 export interface SemanticGraphSelection {
   selected?: SemanticGraphNode;
   selectedEdge?: SemanticGraphEdge;
   nodeIds: Set<string>;
   edgeIds: Set<string>;
   sections: SemanticGraphSelectionSection[];
+  paths?: SemanticGraphConnectionPath[];
+}
+
+export type DeckClaimStatus = "verified" | "manual" | "needs_review";
+export type DeckStoryboardStatus = "draft" | "approved" | "needs_review";
+
+export interface DeckStoryboardClaim {
+  claimId: string;
+  text: string;
+  status: DeckClaimStatus;
+  sourceArtifactId?: string;
+  traceId?: string;
+  proposalId?: string;
+  evidenceId?: string;
+}
+
+export interface DeckSlidePlan {
+  slideId: string;
+  title: string;
+  purpose: string;
+  claims: DeckStoryboardClaim[];
+  sourceArtifactIds: string[];
+  evidenceIds: string[];
+  unresolvedGaps: string[];
+  speakerNote?: string;
+  status: DeckStoryboardStatus;
+}
+
+export interface DeckStoryboard {
+  deckId: string;
+  roomId: string;
+  title: string;
+  audience: string;
+  objective: string;
+  privacy: "room" | "private" | "public";
+  storyboardStatus: DeckStoryboardStatus;
+  slides: DeckSlidePlan[];
+  requiredEvidence: string[];
+  unresolvedGaps: string[];
+  sourceArtifactIds: string[];
+  traceIds: string[];
+  proposalIds: string[];
+  planHash: string;
+  version: number;
 }
 
 export interface SemanticGraphPosition {

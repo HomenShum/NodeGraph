@@ -22,9 +22,55 @@ Streamlit components, or another graph renderer:
 | `edge.label` | Relationship display label |
 | `edge.refs` | Relationship provenance |
 
-For a Neo4j import adapter, keep the raw NodeGraph ids as immutable keys and
-derive Neo4j labels from `node.kind`. Relationship types should be derived from
-`edge.kind.toUpperCase()`.
+The package includes a driver-neutral Neo4j adapter:
+
+```ts
+import {
+  buildNeo4jSyncPlan,
+  buildSemanticGraph,
+  executeNeo4jSyncPlan,
+  exportNodeGraphDocument,
+} from "nodegraph";
+
+const graph = buildSemanticGraph({ roomId, artifacts, traces, proposals, decks });
+const document = exportNodeGraphDocument(graph, {
+  graphId: roomId,
+  provenance: { source: "noderoom", sourceId: roomId },
+});
+const plan = buildNeo4jSyncPlan(document, previousDocument, { pruneMissing: true });
+await executeNeo4jSyncPlan(neo4jSession, plan);
+```
+
+The plan keeps raw NodeGraph ids as immutable keys, scopes every node and
+relationship by `graphId`, derives labels and relationship types from the
+closed NodeGraph kind unions, and passes all user data as `$rows` parameters.
+It uses only standard `UNWIND`, `MERGE`, `MATCH`, and `SET` clauses, so APOC is
+not required. Provenance refs and metadata are preserved as JSON properties;
+applications can promote them to dedicated provenance nodes when their schema
+requires that topology.
+
+The non-destructive `buildNeo4jUpsertPlan` remains available for full upserts.
+Incremental sync defaults to retaining missing records; `pruneMissing: true`
+adds explicit stale relationship and node batches. Every synchronized record
+includes the NodeGraph revision, sync timestamp, and document provenance.
+Inspect either plan before execution when an approval boundary is required.
+
+## Portable Import And In-Memory Storage
+
+`nodegraph.document` v1 is the renderer- and database-neutral interchange
+format. `exportNodeGraphDocument` and `parseNodeGraphDocument` validate stable
+ids, relationship endpoints, deterministic revisions, source provenance, and
+optional persisted positions/pins. `InMemoryNodeGraphAdapter` stores the same
+documents and returns an incremental receipt for every import or sync.
+
+## Decks And Relevant Paths
+
+Pass collaborative deck storyboards through the optional `decks` input. The
+graph models decks, slides, claims, source artifacts, evidence, traces,
+proposals, and unresolved evidence gaps. `selectSemanticNeighborhood` returns
+ranked `paths` in addition to sectioned neighbors; these paths prioritize
+researched, source-backed, and review-relevant routes and are bounded to four
+hops for responsive UI use.
 
 ## Streamlit
 

@@ -1,6 +1,6 @@
 {
   "name": "nodegraph",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Semantic relationship graph primitives extracted from NodeRoom.",
   "type": "module",
   "license": "MIT",
@@ -23,6 +23,7 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
+    "prepare": "npm run build",
     "example:build": "vite build examples/showcase --outDir ../../dist-showcase --emptyOutDir",
     "example:dev": "vite examples/showcase --host 127.0.0.1 --port 5174",
     "showcase:capture": "node scripts/capture-showcase.mjs",

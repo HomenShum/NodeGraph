@@ -7,5 +7,6 @@ docs/media/streamlit-showcase-frames/
 __pycache__/
 *.pyc
 .serena/
+.proofloop/
 .DS_Store
 *.log
