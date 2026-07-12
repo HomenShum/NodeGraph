@@ -30,9 +30,16 @@ try {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 840 }, deviceScaleFactor: 1 });
   await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await page.evaluate(() => localStorage.removeItem("nodegraph:showcase:layout:v1"));
+  await page.reload({ waitUntil: "networkidle" });
 
   const frames = [
     async () => page.getByRole("button", { name: /CardioNova diligence/i }).click(),
+    async () => page.getByRole("button", { name: "Pin selected node" }).click(),
+    async () => {
+      await page.reload({ waitUntil: "networkidle" });
+      await page.getByText("1 pinned", { exact: true }).waitFor();
+    },
     async () => page.locator(".story").getByRole("button", { name: "Who researched the company?" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Show funding evidence" }).click(),
     async () => page.locator(".story").getByRole("button", { name: "Trace the deck claim" }).click(),

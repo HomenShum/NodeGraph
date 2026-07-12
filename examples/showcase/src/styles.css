@@ -35,12 +35,19 @@ button, input, textarea { font: inherit; }
 .story button { justify-content: flex-start; height: 36px; text-transform: none; }
 
 .graphPane { min-width: 0; min-height: 0; position: relative; background: radial-gradient(circle at 50% 48%, rgba(95,208,160,.08), transparent 35%), #0a0d11; }
+.graphToolbar { position: absolute; z-index: 8; top: 14px; left: 16px; display: flex; align-items: center; gap: 6px; padding: 5px; border: 1px solid #2a303b; border-radius: 8px; background: #11161c; box-shadow: 0 8px 22px rgba(0,0,0,.25); }
+.graphToolbar button { height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border: 0; border-right: 1px solid #2a303b; background: transparent; color: #cbd5e1; font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: pointer; }
+.graphToolbar button:last-child { border-right: 0; }
+.graphToolbar button:hover:not(:disabled) { color: #fff; background: #1b222b; }
+.graphToolbar button:disabled { opacity: .42; cursor: default; }
+.graphToolbar span { padding: 0 5px; color: #7f8a9a; font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .graphPane .react-flow__controls { display: flex; flex-direction: row; top: 14px; right: 16px; overflow: hidden; border: 1px solid #2a303b; border-radius: 8px; box-shadow: none; background: #11161c; }
 .graphPane .react-flow__controls-button { width: 30px; height: 30px; border-bottom: 0; border-right: 1px solid #2a303b; background: #11161c; }
 .graphPane .react-flow__controls-button svg { fill: #aab4c2; }
 .graphPane .react-flow__minimap { width: 160px; height: 110px; right: 16px; bottom: 16px; border: 1px solid #2a303b; border-radius: 10px; overflow: hidden; background: #11161c; }
-.ng-node { min-width: 130px; max-width: 210px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 7px; padding: 8px 10px; border: 1px solid #2a303b; border-left: 3px solid var(--ng-color); border-radius: 8px; background: #12171d; color: #f8fafc; font-size: 12px; font-weight: 850; box-shadow: 0 10px 30px rgba(0,0,0,.18); cursor: grab; }
+.ng-node { position: relative; min-width: 130px; max-width: 210px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 7px; padding: 8px 10px; border: 1px solid #2a303b; border-left: 3px solid var(--ng-color); border-radius: 8px; background: #12171d; color: #f8fafc; font-size: 12px; font-weight: 850; box-shadow: 0 10px 30px rgba(0,0,0,.18); cursor: grab; }
 .ng-node.selected { border-color: color-mix(in srgb, var(--ng-color) 65%, #2a303b); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ng-color) 22%, transparent), 0 18px 50px rgba(0,0,0,.22); }
+.ng-node.pinned::after { content: "PIN"; position: absolute; top: -7px; right: 7px; padding: 2px 4px; border: 1px solid color-mix(in srgb, var(--ng-color) 65%, #2a303b); border-radius: 4px; background: #11161c; color: var(--ng-color); font: 800 7px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .ng-node .dot { grid-row: 1 / span 2; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--ng-color); }
 .ng-node span:not(.dot) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ng-node em { color: #7f8a9a; font: 9px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; font-style: normal; }

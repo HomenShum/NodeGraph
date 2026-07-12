@@ -6,7 +6,9 @@ import { selectSemanticGraphCluster, summarizeSemanticGraphClusters } from "../s
 import { layoutSemanticGraph } from "../src/semanticGraphLayout";
 import { selectSemanticNeighborhood } from "../src/semanticGraphSelectors";
 import { buildGraphRelationshipReviewPlan, graphRelationshipReviewFileName, graphRelationshipReviewJson } from "../src/relationshipReview";
-import { buildNeo4jUpsertPlan, executeNeo4jUpsertPlan } from "../src/neo4jAdapter";
+import { buildNeo4jSyncPlan, buildNeo4jUpsertPlan, executeNeo4jSyncPlan, executeNeo4jUpsertPlan } from "../src/neo4jAdapter";
+import { exportNodeGraphDocument, nodeGraphDocumentJson, parseNodeGraphDocument, semanticGraphFingerprint } from "../src/graphContract";
+import { InMemoryNodeGraphAdapter } from "../src/inMemoryAdapter";
 import type { DeckStoryboard } from "../src/semanticGraphTypes";
 
 const human: Actor = { kind: "user", id: "u-priya", name: "Priya" };
@@ -303,5 +305,60 @@ describe("semantic entity graph", () => {
     expect(calls).toHaveLength(plan.batches.length);
     const rowCount = plan.batches.reduce((sum, batch) => sum + batch.parameters.rows.length, 0);
     expect(rowCount).toBe(graph.nodes.length + graph.edges.length);
+  });
+
+  it("round-trips a versioned graph document with provenance and persistent pins", () => {
+    const graph = buildSemanticGraph({ roomId: "room-1", artifacts: [researchSheet, notebook], traces: [trace], proposals: [proposal], decks: [storyboard] });
+    const pinnedId = graph.nodes.find((node) => node.kind === "company")!.id;
+    const document = exportNodeGraphDocument(graph, {
+      graphId: "room-1",
+      generatedAt: 1234,
+      provenance: { source: "noderoom", sourceId: "room-1", revision: "room-v9" },
+      layout: { positions: { [pinnedId]: { x: 120, y: -40 }, missing: { x: 1, y: 1 } }, pinnedNodeIds: [pinnedId, "missing"] },
+    });
+    const parsed = parseNodeGraphDocument(nodeGraphDocumentJson(document));
+    expect(parsed.revision).toBe(semanticGraphFingerprint(graph));
+    expect(parsed.provenance).toMatchObject({ source: "noderoom", sourceId: "room-1", revision: "room-v9", generatedAt: 1234 });
+    expect(parsed.layout).toEqual({ positions: { [pinnedId]: { x: 120, y: -40 } }, pinnedNodeIds: [pinnedId] });
+    expect(parsed.graph.nodes.map((node) => node.id)).toEqual([...parsed.graph.nodes.map((node) => node.id)].sort((left, right) => left.localeCompare(right)));
+  });
+
+  it("applies incremental in-memory and Neo4j synchronization with optional stale pruning", async () => {
+    const graph = buildSemanticGraph({ roomId: "room-1", artifacts: [researchSheet, notebook], traces: [trace], proposals: [proposal], decks: [storyboard] });
+    const initial = exportNodeGraphDocument(graph, { graphId: "room-1", generatedAt: 100, provenance: { source: "noderoom", sourceId: "room-1" } });
+    const removedId = graph.nodes.find((node) => node.kind === "open_question")!.id;
+    const retainedNodes = graph.nodes.filter((node) => node.id !== removedId).map((node, index) => index === 0 ? { ...node, label: `${node.label} updated` } : node);
+    const retainedEdges = graph.edges.filter((edge) => edge.source !== removedId && edge.target !== removedId);
+    const retainedEdgeIds = new Set(retainedEdges.map((edge) => edge.id));
+    const retainedNodeIds = new Set(retainedNodes.map((node) => node.id));
+    const nextGraph = {
+      ...graph,
+      nodes: retainedNodes,
+      edges: retainedEdges,
+      clusters: graph.clusters.map((cluster) => ({
+        ...cluster,
+        nodeIds: cluster.nodeIds.filter((id) => retainedNodeIds.has(id)),
+        edgeIds: cluster.edgeIds.filter((id) => retainedEdgeIds.has(id)),
+      })),
+      stats: { ...graph.stats, nodes: retainedNodes.length, edges: retainedEdges.length, openQuestions: graph.stats.openQuestions - 1 },
+    };
+    const next = exportNodeGraphDocument(nextGraph, { graphId: "room-1", generatedAt: 200, provenance: { source: "noderoom", sourceId: "room-1" } });
+
+    const memory = new InMemoryNodeGraphAdapter([initial]);
+    const receipt = memory.importDocument(next);
+    expect(receipt.previousRevision).toBe(initial.revision);
+    expect(receipt.delta.removeNodeIds).toEqual([removedId]);
+    expect(receipt.delta.upsertNodes).toHaveLength(1);
+    expect(memory.read("room-1")?.revision).toBe(next.revision);
+
+    const plan = buildNeo4jSyncPlan(next, initial, { pruneMissing: true });
+    expect(plan.adapterVersion).toBe(2);
+    expect(plan.batches.some((batch) => batch.purpose === "metadata")).toBe(true);
+    expect(plan.batches.some((batch) => batch.purpose === "delete_nodes" && batch.parameters.rows.some((row) => row.id === removedId))).toBe(true);
+    expect(plan.batches.filter((batch) => batch.purpose === "nodes").reduce((sum, batch) => sum + batch.parameters.rows.length, 0)).toBe(1);
+    expect(plan.batches.every((batch) => !batch.statement.includes("apoc."))).toBe(true);
+    const calls: Array<{ statement: string; parameters?: Record<string, unknown> }> = [];
+    await executeNeo4jSyncPlan({ run: async (statement, parameters) => { calls.push({ statement, parameters }); } }, plan);
+    expect(calls).toHaveLength(plan.batches.length);
   });
 });

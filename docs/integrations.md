@@ -25,11 +25,20 @@ Streamlit components, or another graph renderer:
 The package includes a driver-neutral Neo4j adapter:
 
 ```ts
-import { buildNeo4jUpsertPlan, buildSemanticGraph, executeNeo4jUpsertPlan } from "nodegraph";
+import {
+  buildNeo4jSyncPlan,
+  buildSemanticGraph,
+  executeNeo4jSyncPlan,
+  exportNodeGraphDocument,
+} from "nodegraph";
 
 const graph = buildSemanticGraph({ roomId, artifacts, traces, proposals, decks });
-const plan = buildNeo4jUpsertPlan(graph, roomId);
-await executeNeo4jUpsertPlan(neo4jSession, plan);
+const document = exportNodeGraphDocument(graph, {
+  graphId: roomId,
+  provenance: { source: "noderoom", sourceId: roomId },
+});
+const plan = buildNeo4jSyncPlan(document, previousDocument, { pruneMissing: true });
+await executeNeo4jSyncPlan(neo4jSession, plan);
 ```
 
 The plan keeps raw NodeGraph ids as immutable keys, scopes every node and
@@ -40,10 +49,19 @@ not required. Provenance refs and metadata are preserved as JSON properties;
 applications can promote them to dedicated provenance nodes when their schema
 requires that topology.
 
-The adapter deliberately does not delete absent nodes. Reconciliation and
-retention policies belong to the host application because a graph may combine
-multiple room snapshots or external sources. Inspect `Neo4jUpsertPlan` before
-execution when an approval boundary is required.
+The non-destructive `buildNeo4jUpsertPlan` remains available for full upserts.
+Incremental sync defaults to retaining missing records; `pruneMissing: true`
+adds explicit stale relationship and node batches. Every synchronized record
+includes the NodeGraph revision, sync timestamp, and document provenance.
+Inspect either plan before execution when an approval boundary is required.
+
+## Portable Import And In-Memory Storage
+
+`nodegraph.document` v1 is the renderer- and database-neutral interchange
+format. `exportNodeGraphDocument` and `parseNodeGraphDocument` validate stable
+ids, relationship endpoints, deterministic revisions, source provenance, and
+optional persisted positions/pins. `InMemoryNodeGraphAdapter` stores the same
+documents and returns an incremental receipt for every import or sync.
 
 ## Decks And Relevant Paths
 

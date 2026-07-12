@@ -31,6 +31,8 @@ The React clip must show:
 - Person/company/source/trace/project clusters.
 - Deck slide and claim paths back to sources, traces, and unresolved evidence.
 - Graph agent panel prompts for evidence, review gaps, and who researched the company.
+- Drag or pin a node, reload, and show that the layout persists.
+- Export the canonical NodeGraph JSON and Neo4j sync-plan controls.
 
 The Streamlit clip must show:
 
@@ -53,7 +55,7 @@ A viewer should choose the React package path when embedding NodeGraph in an app
 React showcase:
 
 ```text
-CardioNova diligence map -> who researched -> funding evidence -> deck claim path -> risk questions -> source search -> evidence-only filter
+CardioNova diligence map -> drag/pin CardioNova -> reload persistence -> who researched -> funding evidence -> deck claim path -> risk questions -> evidence-only filter -> JSON/Neo4j export controls
 ```
 
 Streamlit showcase:
