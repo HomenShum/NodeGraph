@@ -1,5 +1,5 @@
 {
-  "name": "nodegraph",
+  "name": "nodegraph-render",
   "version": "0.1.0",
   "description": "Typed-edge live graph for agent sessions: measured evidence, curated assertions, and interaction history never look alike.",
   "license": "MIT",
