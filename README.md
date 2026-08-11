@@ -4,6 +4,39 @@ A typed-edge live graph for agent sessions: Sigma.js + Graphology, React.
 Built for interfaces where a graph accumulates while an agent works, and where
 the reader has to stay able to tell what is evidence and what is not.
 
+## What it looks like
+
+All captures below are from the source product (TrialScope) running this
+exact stack live — none are mockups, and each has a regeneration script in
+the source repo.
+
+**A live turn, end to end** — the agent answers, the graph ingests, the
+cinematic window flares the newcomers, then goes still
+([mp4 version](media/live-agent-session-graph.mp4)):
+
+![Live agent turn: answer, ingestion, flare, still](media/live-agent-session-graph.gif)
+
+**The three trust classes on one panel.** A violet `assertion` edge (a
+curated claim) lands beside the session's measured content; clicking the
+node discloses its release tag — *"Co-inhibition by PD-1 (reactome-v97) —
+curated statements from the named release, not measurements"*:
+
+![Assertion edge with release-tag readout beside measured evidence](media/assertion-selection-readout.png)
+
+**The ingestion window, mid-flare** — motion runs only while an ingestion is
+live (measured as lit overlay pixels: >0 mid-window, exactly 0 after decay),
+and never encodes magnitude:
+
+![Cinematic layer mid-ingestion](media/t2-cinematic-live.png)
+
+![Lightning flare on the side panel, production capture](media/live-lightning-side-panel.png)
+
+**Steady state** — a second entity has landed and the conjunction drew its
+evidence edge; width tracks the measured weight, and the panel legend says
+which edges are evidence and which are only interaction history:
+
+![Two-entity conjunction with probed evidence edge](media/t2-conjunction-edge.png)
+
 ## The three trust rules
 
 Chart libraries treat all edges alike. This one refuses to, and that refusal
