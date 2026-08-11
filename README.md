@@ -1,4 +1,4 @@
-# NodeGraph
+# NodeGraph Live
 
 A typed-edge live graph for agent sessions: Sigma.js + Graphology, React.
 Built for interfaces where a graph accumulates while an agent works, and where
@@ -6,9 +6,10 @@ the reader has to stay able to tell what is evidence and what is not.
 
 ## What it looks like
 
-All captures below are from the source product (TrialScope) running this
-exact stack live — none are mockups, and each has a regeneration script in
-the source repo.
+These captures are production evidence from the source product (TrialScope)
+running the renderer this package was extracted from; they are not mockups.
+They demonstrate the visual grammar and motion. The runnable demo below is the
+current standalone package proof.
 
 **A live turn, end to end** — the agent answers, the graph ingests, the
 cinematic window flares the newcomers, then goes still
@@ -47,9 +48,10 @@ is the product:
    aggregate) and own the width channel. `traversal` edges are interaction
    history — telemetry about *us*, not evidence about the world — and get a
    constant width, labelled "local" next to their toggle. `assertion` edges
-   are curated claims, badged with the release that introduced them
-   (`releaseTag`), never widened. Measured evidence, curated assertions, and
-   interaction history must never look alike.
+   are curated claims, badged with the release that introduced them, never
+   widened, and rejected unless they carry a full replay receipt: source,
+   release, both source identifiers, and a literal HTTP(S) URL. Measured
+   evidence, curated assertions, and interaction history must never look alike.
 
 2. **Motion only during ingestion windows, and never encoding magnitude.**
    The cinematic layer (birth flares, comets on newborn edges, breath halos)
@@ -67,18 +69,22 @@ is the product:
 ## Install
 
 ```sh
-npm install nodegraph sigma graphology graphology-layout-forceatlas2 @sigma/node-border
+npm install @homenshum/nodegraph-live react
 ```
 
-React >= 18 is a peer dependency. This package currently ships TypeScript
-source (`src/`) — consume it through a bundler that compiles TS (Next.js,
-Vite, etc.).
+React >= 18 is a peer dependency. Published packages contain compiled ESM and
+declarations in `dist/`; application consumers do not compile this repository's
+TypeScript source. Core/session imports are safe in Node. The WebGL React
+renderer lives in the explicit browser/client-only `/react` entry; SSR code
+must import it dynamically on the client because Sigma needs WebGL globals at
+module load.
 
 ## Usage
 
 ```tsx
 import { useSyncExternalStore } from "react";
-import { GraphSession, NodeGraph } from "nodegraph";
+import { GraphSession } from "@homenshum/nodegraph-live";
+import { NodeGraph } from "@homenshum/nodegraph-live/react";
 
 const session = new GraphSession();
 
@@ -86,6 +92,7 @@ const session = new GraphSession();
 session.observe(
   [{ kind: "condition", label: "melanoma" }, { kind: "intervention", label: "ipilimumab" }],
   362,
+  { eventId: "tool-call-17" },
 );
 
 // Three or more participants -> pairwise `traversal` edges only: a measured
@@ -99,9 +106,16 @@ session.observe([
 
 // A curated claim, badged with the release that introduced it.
 session.assertEdge(
-  { kind: "intervention", label: "ipilimumab" },
-  { kind: "intervention", label: "nivolumab" },
-  { releaseTag: "v1.2" },
+  { kind: "reaction", label: "BRAF mutants bind MAPKs" },
+  { kind: "pathway", label: "Oncogenic MAPK signaling" },
+  {
+    source: "Reactome",
+    release: "v97",
+    subjectId: "R-HSA-6802912",
+    objectId: "R-HSA-6802957",
+    url: "https://reactome.org/content/detail/R-HSA-6802912",
+  },
+  { eventId: "reactome:R-HSA-6802912:R-HSA-6802957:v97" },
 );
 
 function Panel() {
@@ -114,16 +128,71 @@ You can also bypass the session store and feed `NodeGraph` (or `buildGraph` /
 `patchGraph` directly) with your own `{ nodes, edges }`, or ingest a whole
 subgraph payload with `session.ingest({ entities, relationships })`.
 
+## The reliability contract
+
+This panel is often left open while an agent performs hundreds of calls. The
+default session therefore retains at most 1,000 nodes, 3,000 edges, and 5,000
+deduplication receipts. Override those bounds explicitly when constructing the
+session:
+
+```ts
+const session = new GraphSession({ maxNodes: 500, maxEdges: 1_200, maxSeen: 2_000 });
+```
+
+Eviction is FIFO and deterministic. Removing a session node also removes its
+incident edges, and `patchGraph` reconciles those removals into the live
+Graphology graph so the renderer does not retain stale state.
+
+Event idempotence uses the full, key-sorted payload. An exact retry does
+nothing; reusing the same `eventId` with changed content throws instead of
+silently hiding the change. Without an explicit id, the complete canonical
+payload is the deduplication key. Deduplication is intentionally bounded by
+`maxSeen`, not an unbounded promise about the lifetime of a browser tab.
+
+Two absence rules are also executable API contracts:
+
+- A missing node `count` means **unknown / not measured**. A `count` of `0`
+  means **measured zero**. The selection readout states the difference.
+- Edge `type` is required at runtime. Missing or unknown types reject the
+  complete batch before any partial graph is drawn; there is no evidence
+  fallback.
+
+## Run the visual demo
+
+```sh
+npm install
+npm run build
+npm run demo
+```
+
+Open `http://127.0.0.1:4173`. The demo first shows unknown beside measured
+zero, then ingests an evidence edge, traversal edges, and a fully receipted
+Reactome assertion one at a time. Use **Add another live branch** to replay the
+ingestion-window lightning effect.
+
+![Standalone demo during a live ingestion window](media/standalone-demo-mid-ingestion.png)
+
+The scenario suite uses Node's built-in test runner, so no test framework is
+added:
+
+```sh
+npm test
+npm run typecheck
+npm run verify:demo
+npm audit
+npm pack --dry-run
+```
+
 ## The patchGraph no-remount contract
 
-`<NodeGraph>` builds its Graphology graph **once per mount** and patches
-growth into it in place. `patchGraph` diffs incoming `{nodes, edges}` against
-the live graph, returns exactly which node ids and edge keys were born (so
-the cinematic layer flares precisely the newcomers), and never rebuilds the
-Sigma instance. Rebuilding on every update tears down five canvases and the
-layout per ingestion — the whole panel flashes. Internally a `rev` counter
-invalidates memos, because mutations do not change the graph's object
-identity.
+`<NodeGraph>` builds its Graphology graph **once per mount** and reconciles each
+complete `{nodes, edges}` snapshot into it in place. `patchGraph` returns the
+exact node ids and edge keys added or removed, so the cinematic layer flares
+only newcomers while bounded-store eviction removes stale renderer state. It
+never rebuilds the Sigma instance. Rebuilding on every update tears down five
+canvases and the layout per ingestion — the whole panel flashes. Internally a
+`rev` counter invalidates memos, because mutations do not change the graph's
+object identity.
 
 Two model invariants back this up:
 
@@ -141,7 +210,7 @@ step parsing) stayed behind; the participant-count ingestion rule, the typed
 edge model, the patch contract, the drag behaviour, and the cinematic layer
 are ported intact. Edge types were renamed for the general case:
 `co-occurrence` → `evidence`, `agent-traversal` → `traversal`, and
-`assertion` (with `releaseTag`) is new.
+`assertion` (with a replayable source receipt) is new.
 
 One measured note from the source repo (its `MEASUREMENTS.md` #62, produced
 by its `web/scripts/bench-graph.mjs`, not re-run here): the Sigma/Cytoscape

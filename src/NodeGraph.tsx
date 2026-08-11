@@ -30,7 +30,7 @@ import Sigma from "sigma";
 // a filled disc reads as a scatter point. Official sigma program.
 import { NodeBorderProgram } from "@sigma/node-border";
 import forceAtlas2 from "graphology-layout-forceatlas2";
-import FA2Layout from "graphology-layout-forceatlas2/worker";
+import FA2Layout from "graphology-layout-forceatlas2/worker.js";
 import {
   buildGraph,
   patchGraph,
@@ -38,9 +38,10 @@ import {
   edgeTypeCounts,
   edgeTypesPresent,
   isEvidenceEdgeType,
+  type AssertionReceipt,
   type GraphEdge,
   type GraphNode,
-} from "./graph-model";
+} from "./graph-model.js";
 
 export type NodeClickMessage = {
   source: "nodegraph";
@@ -48,8 +49,14 @@ export type NodeClickMessage = {
   id: string;
   label: string;
   nodeKind: string;
-  count: number;
-  edges: { other: string; weight: number; type: string; releaseTag?: string }[];
+  /** Absent means no measurement; zero is a real measured value. */
+  count?: number;
+  edges: {
+    other: string;
+    weight: number;
+    type: string;
+    receipt?: AssertionReceipt;
+  }[];
 };
 
 export type ContextMessage = {
@@ -80,6 +87,7 @@ export type NodeGraphProps = {
  */
 const settleMs = (order: number) => Math.min(1000 + order * 2, 6000);
 const syncIterations = (order: number) => (order > 1200 ? 120 : 300);
+const labelThreshold = (order: number) => (order <= 150 ? 0 : 8);
 
 export function NodeGraph({
   nodes,
@@ -120,6 +128,8 @@ export function NodeGraph({
   useEffect(() => {
     const patch = patchGraph(graph, nodes, edges, { dark, visits, kindColors });
     const added = patch.added;
+    for (const id of patch.removedNodeIds) births.current.nodes.delete(id);
+    for (const key of patch.removedEdgeKeys) births.current.edges.delete(key);
     if (added > 0) {
       const now = performance.now();
       for (const id of patch.addedNodeIds) births.current.nodes.set(id, now);
@@ -127,7 +137,6 @@ export function NodeGraph({
       // The ambience window: streaming plus a tail. Extended per ingestion, so
       // a multi-part update reads as one live moment.
       liveUntil.current = now + 3200;
-      setRev((r) => r + 1);
       // A short settle folds the newcomers in; positions of existing nodes
       // are already good, so this is a moment of worker time, not a re-layout
       // from the circle. Reduced motion: place-and-stop, no drift.
@@ -138,6 +147,8 @@ export function NodeGraph({
         Math.min(600 + added * 40, 2000),
       );
     }
+    if (patch.added > 0 || patch.removed > 0) setRev((r) => r + 1);
+    sigmaRef.current?.setSetting("labelRenderedSizeThreshold", labelThreshold(graph.order));
     sigmaRef.current?.refresh();
   }, [graph, nodes, edges, dark, visits, kindColors]);
   const types = useMemo(() => edgeTypesPresent(graph), [graph, rev]);
@@ -212,13 +223,13 @@ export function NodeGraph({
     const renderer = new Sigma(graph, el, {
       renderLabels: true,
       // At a few thousand nodes every label is noise and a per-frame cost.
-      labelRenderedSizeThreshold: 8,
+      labelRenderedSizeThreshold: labelThreshold(graph.order),
       labelFont: "ui-sans-serif, system-ui, sans-serif",
       labelSize: 13,
       labelWeight: "600",
       labelColor: { color: dark ? "#e2e6e9" : "#15181a" },
-      // The assertion badge: assertion edges carry their releaseTag as the
-      // edge label; other types carry no label, so nothing else changes.
+      // The assertion badge: assertion edges carry their receipted release as
+      // the edge label; other types carry no label, so nothing else changes.
       renderEdgeLabels: true,
       edgeLabelSize: 10,
       edgeLabelColor: { color: dark ? "#9aa4ad" : "#5a626a" },
@@ -267,7 +278,7 @@ export function NodeGraph({
         id,
         label: a.label as string,
         nodeKind: a.kind as string,
-        count: a.count as number,
+        ...(typeof a.count === "number" ? { count: a.count } : {}),
         edges: graph
           .edges(id)
           .filter((e) => !hiddenRef.current.hiddenEdges.has(e))
@@ -275,8 +286,8 @@ export function NodeGraph({
             other: graph.getNodeAttribute(graph.opposite(id, e), "label") as string,
             weight: graph.getEdgeAttribute(e, "weight") as number,
             type: graph.getEdgeAttribute(e, EDGE_TYPE_ATTR) as string,
-            ...(graph.getEdgeAttribute(e, "releaseTag")
-              ? { releaseTag: graph.getEdgeAttribute(e, "releaseTag") as string }
+            ...(graph.getEdgeAttribute(e, "receipt")
+              ? { receipt: graph.getEdgeAttribute(e, "receipt") as AssertionReceipt }
               : {}),
           })),
       };
@@ -383,8 +394,14 @@ export function NodeGraph({
     const el = containerRef.current;
     const sig = sigmaRef.current;
     if (!cv || !el || !sig) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (performance.now() > liveUntil.current) return;
+    if (
+      matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      performance.now() > liveUntil.current
+    ) {
+      births.current.nodes.clear();
+      births.current.edges.clear();
+      return;
+    }
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = el.clientWidth * dpr;
@@ -401,6 +418,8 @@ export function NodeGraph({
       const now = performance.now();
       ctx.clearRect(0, 0, el.clientWidth, el.clientHeight);
       if (now > liveUntil.current) {
+        births.current.nodes.clear();
+        births.current.edges.clear();
         return; // window closed: leave the canvas clean and stop scheduling.
       }
 
@@ -410,7 +429,11 @@ export function NodeGraph({
       let i = 0;
       graph.forEachNode((id, a) => {
         const p = sig.graphToViewport({ x: a.x as number, y: a.y as number });
-        const size = (a.size as number) ?? 8;
+        const size = Number(a.size ?? 8);
+        if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(size) || size <= 0) {
+          i += 1;
+          return;
+        }
         const breath = 0.1 + 0.06 * Math.sin(now / 420 + i * 1.7);
         const born = births.current.nodes.get(id);
         const flare = born ? Math.max(0, 1 - (now - born) / FLARE_MS) : 0;
@@ -439,10 +462,17 @@ export function NodeGraph({
         const a2 = graph.getNodeAttributes(tgt);
         const p1 = sig.graphToViewport({ x: a1.x as number, y: a1.y as number });
         const p2 = sig.graphToViewport({ x: a2.x as number, y: a2.y as number });
+        if (
+          !Number.isFinite(p1.x) ||
+          !Number.isFinite(p1.y) ||
+          !Number.isFinite(p2.x) ||
+          !Number.isFinite(p2.y)
+        ) continue;
         const t01 = (age % (COMET_MS / 2)) / (COMET_MS / 2);
         const ease = t01 * t01 * (3 - 2 * t01);
         const hx = p1.x + (p2.x - p1.x) * ease;
         const hy = p1.y + (p2.y - p1.y) * ease;
+        if (!Number.isFinite(hx) || !Number.isFinite(hy)) continue;
         const fade = 1 - age / COMET_MS;
         ctx.save();
         ctx.globalAlpha = 0.85 * fade;
@@ -455,6 +485,10 @@ export function NodeGraph({
         // tail
         const tx = p1.x + (p2.x - p1.x) * Math.max(0, ease - 0.22);
         const ty = p1.y + (p2.y - p1.y) * Math.max(0, ease - 0.22);
+        if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+          ctx.restore();
+          continue;
+        }
         const tg = ctx.createLinearGradient(tx, ty, hx, hy);
         tg.addColorStop(0, "rgba(140,200,255,0)");
         tg.addColorStop(1, dark ? "rgba(205,238,255,0.7)" : "rgba(42,143,224,0.55)");
@@ -644,8 +678,10 @@ export function NodeGraph({
           <dd style={{ margin: 0 }}>
             {selected.label} <span style={{ color: muted }}>· {selected.nodeKind}</span>
           </dd>
-          <dt style={{ color: muted }}>count (measured)</dt>
-          <dd style={{ margin: 0 }}>{selected.count.toLocaleString()}</dd>
+          <dt style={{ color: muted }}>count</dt>
+          <dd data-testid="count-readout" style={{ margin: 0 }}>
+            {selected.count === undefined ? "unknown — not measured" : selected.count.toLocaleString()}
+          </dd>
           <dt style={{ color: muted }}>visits</dt>
           <dd data-testid="visits-readout" style={{ margin: 0 }}>
             {(graph.getNodeAttribute(selected.id, "visits") as number) ?? 0}{" "}
@@ -653,12 +689,12 @@ export function NodeGraph({
               — interaction frequency, not evidence strength
             </span>
           </dd>
-          {selected.edges.some((e) => e.releaseTag) && (
+          {selected.edges.some((e) => e.receipt) && (
             <>
               <dt style={{ color: muted }}>assertions</dt>
               <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {selected.edges
-                  .filter((e) => e.releaseTag)
+                  .filter((e) => e.receipt)
                   .map((e, i) => (
                     <span
                       key={i}
@@ -669,8 +705,17 @@ export function NodeGraph({
                         fontSize: 11,
                         color: muted,
                       }}
+                      title={`${e.receipt?.subjectId} → ${e.receipt?.objectId}`}
                     >
-                      {e.other} · {e.releaseTag}
+                      {e.other} · {e.receipt?.source} {e.receipt?.release} ·{" "}
+                      <a
+                        href={e.receipt?.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: "inherit" }}
+                      >
+                        receipt
+                      </a>
                     </span>
                   ))}
               </dd>

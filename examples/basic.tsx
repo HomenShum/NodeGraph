@@ -4,7 +4,8 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { GraphSession, NodeGraph } from "../src";
+import { GraphSession } from "../src/index.js";
+import { NodeGraph } from "../src/react.js";
 
 const session = new GraphSession();
 
@@ -28,9 +29,15 @@ session.observe([
 
 // A curated claim, badged with the release that introduced it.
 session.assertEdge(
-  { kind: "intervention", label: "ipilimumab" },
-  { kind: "intervention", label: "nivolumab" },
-  { releaseTag: "v1.2" },
+  { kind: "reaction", label: "BRAF mutants bind MAPKs" },
+  { kind: "pathway", label: "Oncogenic MAPK signaling" },
+  {
+    source: "Reactome",
+    release: "v97",
+    subjectId: "R-HSA-6802912",
+    objectId: "R-HSA-6802957",
+    url: "https://reactome.org/content/detail/R-HSA-6802912",
+  },
 );
 
 export function Basic() {

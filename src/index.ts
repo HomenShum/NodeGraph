@@ -5,30 +5,27 @@ export {
   edgeTypesPresent,
   edgeTypeCounts,
   isEvidenceEdgeType,
+  isEdgeType,
+  requireEdgeType,
+  requireAssertionReceipt,
   EDGE_TYPES,
-  DEFAULT_EDGE_TYPE,
   EDGE_TYPE_ATTR,
   EVIDENCE_EDGE_TYPES,
   type EdgeTypeName,
   type EdgeKey,
   type GraphNode,
   type GraphEdge,
+  type AssertionReceipt,
   type BuildOptions,
   type PatchResult,
-} from "./graph-model";
+} from "./graph-model.js";
 
 export {
   GraphSession,
   type EntityRef,
   type SessionNode,
   type SessionSnapshot,
-} from "./session";
-
-export {
-  NodeGraph,
-  type NodeGraphProps,
-  type NodeClickMessage,
-  type ContextMessage,
-} from "./NodeGraph";
-
-export { default } from "./NodeGraph";
+  type SessionLimits,
+  type SessionStats,
+  type EventOptions,
+} from "./session.js";

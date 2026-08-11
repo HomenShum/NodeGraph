@@ -12,9 +12,9 @@
  *                    agent (or user) walked this pair together. That is
  *                    telemetry about us, not evidence about the world, so it
  *                    gets a constant width and lighter ink.
- *   - `assertion`  — a curated claim, optionally tagged with the release that
- *                    introduced it (`releaseTag`, rendered as a badge on the
- *                    edge). Curated is not measured: constant width.
+ *   - `assertion`  — a curated claim carrying a complete source receipt. Its
+ *                    release is rendered as a badge. Curated is not measured:
+ *                    constant width.
  *
  * Two invariants enforced here rather than left to the renderer:
  *
@@ -23,7 +23,7 @@
  *      measured evidence weight (a real bug in the source repo, recorded in
  *      its MEASUREMENTS.md #52); an unsorted key lets one relationship become
  *      two stacked edges carrying different numbers. So: multigraph, key
- *      `min|max|type`.
+ *      JSON tuple `[min, max, type]` (so delimiters inside ids cannot collide).
  *
  *   2. MEASURED MAGNITUDES AND TELEMETRY DO NOT SHARE A VISUAL CHANNEL.
  *      Only `evidence` weights are scaled into edge width; the width scale is
@@ -38,14 +38,24 @@ import Graph from "graphology";
 export const EDGE_TYPES = ["evidence", "traversal", "assertion"] as const;
 export type EdgeTypeName = (typeof EDGE_TYPES)[number];
 
-/** `GraphEdge.type`'s default. An absent field means this. */
-export const DEFAULT_EDGE_TYPE: EdgeTypeName = "evidence";
-
 /** Edge kinds whose `weight` is a measured value and may therefore be encoded
  *  as a magnitude. Everything not in this set is telemetry or curation. */
 export const EVIDENCE_EDGE_TYPES: ReadonlySet<string> = new Set(["evidence"]);
 
-export const isEvidenceEdgeType = (t: string) => EVIDENCE_EDGE_TYPES.has(t);
+export const isEdgeType = (value: unknown): value is EdgeTypeName =>
+  typeof value === "string" && (EDGE_TYPES as readonly string[]).includes(value);
+
+/** Runtime payloads do not get to invent a fourth epistemic category. */
+export const requireEdgeType = (value: unknown): EdgeTypeName => {
+  if (!isEdgeType(value)) {
+    throw new TypeError(
+      `Unknown edge type ${JSON.stringify(value)}; expected ${EDGE_TYPES.join(", ")}`,
+    );
+  }
+  return value;
+};
+
+export const isEvidenceEdgeType = (t: EdgeTypeName) => EVIDENCE_EDGE_TYPES.has(t);
 
 /** Default node-ring palette. Hue encodes node KIND (a categorical channel),
  *  never magnitude. A kind outside the caller's `kindColors` map gets a hue
@@ -73,31 +83,101 @@ const kindHue = (kind: string): { light: string; dark: string } => {
  * spent on node kind, and a second categorical hue scale on one canvas is
  * unreadable. Evidence carries the weight channel, so it gets the darkest ink.
  */
-const EDGE_COLOR: Record<string, { light: string; dark: string }> = {
+const EDGE_COLOR: Record<EdgeTypeName, { light: string; dark: string }> = {
   evidence: { light: "#3f464d", dark: "#a8b1b9" },
   traversal: { light: "#9aa1a8", dark: "#616a72" },
   assertion: { light: "#7d858c", dark: "#727b83" },
 };
-const EDGE_FALLBACK = { light: "#9aa1a8", dark: "#616a72" };
 
 export type GraphNode = {
   id: string;
   label: string;
   /** Entity kind — any string; drives the ring hue (categorical only). */
   type: string;
-  /** Measured magnitude for this entity. Never summed or estimated here. */
-  count: number;
+  /** Measured magnitude for this entity. Never summed or estimated here.
+   *  Absent means unknown. A measured zero is the number 0. */
+  count?: number;
 };
 
-export type GraphEdge = {
+export type AssertionReceipt = {
+  /** Curating system of record, for example `Reactome`. */
+  source: string;
+  /** Versioned release containing the assertion. */
+  release: string;
+  /** Stable source identifiers for both endpoints. */
+  subjectId: string;
+  objectId: string;
+  /** Literal HTTP(S) URL that re-opens or replays the assertion. */
+  url: string;
+};
+
+type EdgeBase = {
   source: string;
   target: string;
   weight: number;
-  /** Edge type. Absent means `evidence` (the historical default). */
-  type?: string;
-  /** For `assertion` edges: the release that introduced the claim.
-   *  Rendered as a badge (edge label) by the renderer. */
-  releaseTag?: string;
+};
+
+export type GraphEdge =
+  | (EdgeBase & { type: "evidence" | "traversal"; receipt?: never })
+  | (EdgeBase & { type: "assertion"; receipt: AssertionReceipt });
+
+const requireText = (value: unknown, field: string): string => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new TypeError(`${field} must be a non-empty string`);
+  }
+  return value;
+};
+
+export const requireAssertionReceipt = (value: unknown): AssertionReceipt => {
+  if (!value || typeof value !== "object") {
+    throw new TypeError("assertion receipt is required");
+  }
+  const receipt = value as Record<string, unknown>;
+  const parsed: AssertionReceipt = {
+    source: requireText(receipt.source, "receipt.source"),
+    release: requireText(receipt.release, "receipt.release"),
+    subjectId: requireText(receipt.subjectId, "receipt.subjectId"),
+    objectId: requireText(receipt.objectId, "receipt.objectId"),
+    url: requireText(receipt.url, "receipt.url"),
+  };
+  let url: URL;
+  try {
+    url = new URL(parsed.url);
+  } catch {
+    throw new TypeError("receipt.url must be an absolute HTTP(S) URL");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new TypeError("receipt.url must be an absolute HTTP(S) URL");
+  }
+  return parsed;
+};
+
+const validateNodes = (nodes: readonly GraphNode[]) => {
+  for (const node of nodes) {
+    requireText(node.id, "node.id");
+    requireText(node.label, "node.label");
+    requireText(node.type, "node.type");
+    if (
+      node.count !== undefined &&
+      (!Number.isFinite(node.count) || node.count < 0)
+    ) {
+      throw new TypeError("node.count must be a finite non-negative number or absent");
+    }
+  }
+};
+
+const validateEdges = (edges: readonly GraphEdge[]) => {
+  for (const edge of edges) {
+    const type = requireEdgeType((edge as { type?: unknown }).type);
+    requireText(edge.source, "edge.source");
+    requireText(edge.target, "edge.target");
+    if (!Number.isFinite(edge.weight) || edge.weight < 0) {
+      throw new TypeError("edge.weight must be a finite non-negative number");
+    }
+    if (type === "assertion") {
+      requireAssertionReceipt((edge as { receipt?: unknown }).receipt);
+    }
+  }
 };
 
 export type BuildOptions = {
@@ -130,14 +210,15 @@ export type EdgeKey = string;
 /** `(a, b, type)` with the endpoints CANONICALLY ORDERED — without the sort,
  *  `a|b|evidence` and `b|a|evidence` are different keys and one measured
  *  relationship becomes two edges drawn on top of each other. */
-export const edgeKey = (source: string, target: string, type: string): EdgeKey => {
+export const edgeKey = (source: string, target: string, type: unknown): EdgeKey => {
+  const safeType = requireEdgeType(type);
   const [a, b] = source < target ? [source, target] : [target, source];
-  return `${a}|${b}|${type}`;
+  return JSON.stringify([a, b, safeType]);
 };
 
 /** Node radius in Sigma units. sqrt so AREA tracks count, not radius. */
-const sizeFor = (count: number, max: number) =>
-  6 + 18 * Math.sqrt(Math.max(count, 0) / Math.max(max, 1));
+const sizeFor = (count: number | undefined, max: number) =>
+  6 + 18 * Math.sqrt(Math.max(count ?? 0, 0) / Math.max(max, 1));
 
 /**
  * Deterministic seed positions on a circle. A force layout moves every node on
@@ -154,11 +235,11 @@ const nodeHue = (type: string, opts: BuildOptions) =>
 
 const edgeDisplayAttrs = (
   e: GraphEdge,
-  type: string,
+  type: EdgeTypeName,
   evidenceMax: number,
   dark: boolean,
 ) => {
-  const ink = EDGE_COLOR[type] ?? EDGE_FALLBACK;
+  const ink = EDGE_COLOR[type];
   const evidence = isEvidenceEdgeType(type);
   return {
     weight: e.weight,
@@ -167,15 +248,19 @@ const edgeDisplayAttrs = (
     size: evidence ? 0.6 + 4.4 * (e.weight / evidenceMax) : 1,
     color: dark ? ink.dark : ink.light,
     // The assertion badge: Sigma renders the `label` attribute along the edge.
-    ...(type === "assertion" && e.releaseTag
-      ? { label: e.releaseTag, releaseTag: e.releaseTag }
+    ...(e.type === "assertion"
+      ? {
+          label: e.receipt.release,
+          releaseTag: e.receipt.release,
+          receipt: e.receipt,
+        }
       : {}),
   };
 };
 
 const evidenceMaxOf = (edges: readonly GraphEdge[]) =>
   edges.reduce(
-    (m, e) => (isEvidenceEdgeType(e.type ?? DEFAULT_EDGE_TYPE) ? Math.max(m, e.weight) : m),
+    (m, e) => (isEvidenceEdgeType(e.type) ? Math.max(m, e.weight) : m),
     1,
   );
 
@@ -184,13 +269,18 @@ export function buildGraph(
   edges: readonly GraphEdge[],
   opts: BuildOptions = {},
 ): Graph {
+  // Validate the complete payload before mutating anything. A renderer that
+  // paints half a batch before discovering an unknown edge type has already
+  // made a false claim.
+  validateNodes(nodes);
+  validateEdges(edges);
   const dark = opts.dark ?? false;
   const visits = opts.visits ?? {};
   // Multi + undirected: two relationship kinds on one pair are two rows, and
   // (a,b) and (b,a) are one row within a kind.
   const g = new Graph({ multi: true, type: "undirected" });
 
-  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count), 1);
+  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count ?? 0), 1);
   nodes.forEach((n, i) => {
     if (g.hasNode(n.id)) return;
     const hue = nodeHue(n.type, opts);
@@ -198,7 +288,8 @@ export function buildGraph(
       ...seed(i, nodes.length),
       label: n.label,
       kind: n.type,
-      count: n.count,
+      count: n.count ?? null,
+      countState: n.count === undefined ? "unknown" : "measured",
       // Interaction frequency. An attribute, never a channel.
       visits: visits[n.id] ?? 0,
       size: sizeFor(n.count, maxCount),
@@ -212,7 +303,7 @@ export function buildGraph(
 
   const evidenceMax = evidenceMaxOf(edges);
   for (const e of edges) {
-    const type = e.type ?? DEFAULT_EDGE_TYPE;
+    const type = requireEdgeType(e.type);
     // An edge to a node the payload did not describe would have to invent that
     // node — and an invented node has no measured count, so it would draw a
     // magnitude nobody measured. Drop the edge instead.
@@ -231,8 +322,8 @@ export function buildGraph(
 /** Edge types actually present, in declared order. Drives the filter UI:
  *  a toggle for a type with no edges is a control that does nothing. */
 export function edgeTypesPresent(g: Graph): EdgeTypeName[] {
-  const seen = new Set<string>();
-  g.forEachEdge((_k, a) => seen.add(a[EDGE_TYPE_ATTR] as string));
+  const seen = new Set<EdgeTypeName>();
+  g.forEachEdge((_k, a) => seen.add(requireEdgeType(a[EDGE_TYPE_ATTR])));
   return EDGE_TYPES.filter((t) => seen.has(t));
 }
 
@@ -240,7 +331,7 @@ export function edgeTypesPresent(g: Graph): EdgeTypeName[] {
 export function edgeTypeCounts(g: Graph): Record<string, number> {
   const out: Record<string, number> = {};
   g.forEachEdge((_k, a) => {
-    const t = a[EDGE_TYPE_ATTR] as string;
+    const t = requireEdgeType(a[EDGE_TYPE_ATTR]);
     out[t] = (out[t] ?? 0) + 1;
   });
   return out;
@@ -263,8 +354,11 @@ export function edgeTypeCounts(g: Graph): Record<string, number> {
  */
 export type PatchResult = {
   added: number;
+  removed: number;
   addedNodeIds: string[];
   addedEdges: { key: string; source: string; target: string }[];
+  removedNodeIds: string[];
+  removedEdgeKeys: string[];
 };
 
 export function patchGraph(
@@ -273,19 +367,40 @@ export function patchGraph(
   edges: readonly GraphEdge[],
   opts: BuildOptions = {},
 ): PatchResult {
+  validateNodes(nodes);
+  validateEdges(edges);
   const dark = opts.dark ?? false;
   const visits = opts.visits ?? {};
   const addedNodeIds: string[] = [];
   const addedEdges: { key: string; source: string; target: string }[] = [];
+  const removedNodeIds: string[] = [];
+  const removedEdgeKeys: string[] = [];
 
-  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count), 1);
+  // Props are the complete snapshot. Reconcile removals in place so bounded
+  // session eviction actually reaches the Graphology/Sigma surface instead
+  // of leaving invisible stale state to grow forever.
+  const desiredNodeIds = new Set(nodes.map((node) => node.id));
+  const desiredEdgeKeys = new Set(
+    edges.map((edge) => edgeKey(edge.source, edge.target, edge.type)),
+  );
+  g.forEachEdge((key) => {
+    if (!desiredEdgeKeys.has(key)) removedEdgeKeys.push(key);
+  });
+  for (const key of removedEdgeKeys) g.dropEdge(key);
+  g.forEachNode((id) => {
+    if (!desiredNodeIds.has(id)) removedNodeIds.push(id);
+  });
+  for (const id of removedNodeIds) g.dropNode(id);
+
+  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count ?? 0), 1);
   const jitter = () => (Math.sin(g.order * 12.9898) % 1) * 0.08; // deterministic
 
   for (const n of nodes) {
     const hue = nodeHue(n.type, opts);
     if (g.hasNode(n.id)) {
       g.mergeNodeAttributes(n.id, {
-        count: n.count,
+        count: n.count ?? null,
+        countState: n.count === undefined ? "unknown" : "measured",
         visits: visits[n.id] ?? g.getNodeAttribute(n.id, "visits") ?? 0,
         size: sizeFor(n.count, maxCount),
       });
@@ -317,7 +432,8 @@ export function patchGraph(
         y,
         label: n.label,
         kind: n.type,
-        count: n.count,
+        count: n.count ?? null,
+        countState: n.count === undefined ? "unknown" : "measured",
         visits: visits[n.id] ?? 0,
         size: sizeFor(n.count, maxCount),
         color: dark ? "#1c1f22" : "#ffffff",
@@ -329,12 +445,16 @@ export function patchGraph(
   }
   // Sizes scale against maxCount, which a new hub can move: refresh all.
   g.forEachNode((id, a) => {
-    g.setNodeAttribute(id, "size", sizeFor((a.count as number) ?? 0, maxCount));
+    g.setNodeAttribute(
+      id,
+      "size",
+      sizeFor(typeof a.count === "number" ? a.count : undefined, maxCount),
+    );
   });
 
   const evidenceMax = evidenceMaxOf(edges);
   for (const e of edges) {
-    const type = e.type ?? DEFAULT_EDGE_TYPE;
+    const type = requireEdgeType(e.type);
     const key = edgeKey(e.source, e.target, type);
     if (!g.hasNode(e.source) || !g.hasNode(e.target)) continue;
     const attrs = edgeDisplayAttrs(e, type, evidenceMax, dark);
@@ -346,7 +466,10 @@ export function patchGraph(
   }
   return {
     added: addedNodeIds.length + addedEdges.length,
+    removed: removedNodeIds.length + removedEdgeKeys.length,
     addedNodeIds,
     addedEdges,
+    removedNodeIds,
+    removedEdgeKeys,
   };
 }
