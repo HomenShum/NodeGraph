@@ -1,0 +1,35 @@
+{
+  "name": "nodegraph",
+  "version": "0.1.0",
+  "description": "Typed-edge live graph for agent sessions: measured evidence, curated assertions, and interaction history never look alike.",
+  "license": "MIT",
+  "author": "Homen Shum",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HomenShum/NodeGraph.git"
+  },
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "@sigma/node-border": "^3.0.0",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "sigma": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "typescript": "^5.6.0"
+  }
+}

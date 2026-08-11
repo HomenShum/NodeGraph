@@ -1,0 +1,352 @@
+/**
+ * The graph model: a Graphology multigraph with TYPED edges, plus an in-place
+ * diff (`patchGraph`) so a growing graph never rebuilds its renderer.
+ *
+ * Three edge types, and the distinction is the point of this library:
+ *
+ *   - `evidence`   — a MEASURED relationship. The weight came from an external
+ *                    system of record (an API count, a database aggregate) and
+ *                    may therefore be encoded as a magnitude: evidence edges
+ *                    own the width channel.
+ *   - `traversal`  — interaction history. The weight is how many times the
+ *                    agent (or user) walked this pair together. That is
+ *                    telemetry about us, not evidence about the world, so it
+ *                    gets a constant width and lighter ink.
+ *   - `assertion`  — a curated claim, optionally tagged with the release that
+ *                    introduced it (`releaseTag`, rendered as a badge on the
+ *                    edge). Curated is not measured: constant width.
+ *
+ * Two invariants enforced here rather than left to the renderer:
+ *
+ *   1. THE EDGE KEY CARRIES THE TYPE, with endpoints canonically ordered.
+ *      Keying on (a, b) alone lets a traversal count silently overwrite a
+ *      measured evidence weight (a real bug in the source repo, recorded in
+ *      its MEASUREMENTS.md #52); an unsorted key lets one relationship become
+ *      two stacked edges carrying different numbers. So: multigraph, key
+ *      `min|max|type`.
+ *
+ *   2. MEASURED MAGNITUDES AND TELEMETRY DO NOT SHARE A VISUAL CHANNEL.
+ *      Only `evidence` weights are scaled into edge width; the width scale is
+ *      computed over evidence edges only, so a 900-visit traversal edge cannot
+ *      stretch the scale measured weights are read against. Node `visits` is
+ *      carried as an attribute and surfaced as text, never mapped to size,
+ *      colour or opacity.
+ */
+
+import Graph from "graphology";
+
+export const EDGE_TYPES = ["evidence", "traversal", "assertion"] as const;
+export type EdgeTypeName = (typeof EDGE_TYPES)[number];
+
+/** `GraphEdge.type`'s default. An absent field means this. */
+export const DEFAULT_EDGE_TYPE: EdgeTypeName = "evidence";
+
+/** Edge kinds whose `weight` is a measured value and may therefore be encoded
+ *  as a magnitude. Everything not in this set is telemetry or curation. */
+export const EVIDENCE_EDGE_TYPES: ReadonlySet<string> = new Set(["evidence"]);
+
+export const isEvidenceEdgeType = (t: string) => EVIDENCE_EDGE_TYPES.has(t);
+
+/** Default node-ring palette. Hue encodes node KIND (a categorical channel),
+ *  never magnitude. A kind outside the caller's `kindColors` map gets a hue
+ *  picked deterministically by hashing the kind name, so the same kind gets
+ *  the same hue in every session without any registration step. */
+const PALETTE: { light: string; dark: string }[] = [
+  { light: "#2a78d6", dark: "#3987e5" },
+  { light: "#eb6834", dark: "#d95926" },
+  { light: "#1baf7a", dark: "#199e70" },
+  { light: "#8a63d2", dark: "#9a77e0" },
+  { light: "#c4416e", dark: "#d45c84" },
+  { light: "#b08b1e", dark: "#c29c2e" },
+];
+
+const kindHue = (kind: string): { light: string; dark: string } => {
+  let h = 0;
+  for (let i = 0; i < kind.length; i++) h = (Math.imul(h, 31) + kind.charCodeAt(i)) | 0;
+  return PALETTE[Math.abs(h) % PALETTE.length];
+};
+
+/**
+ * Edge ink. Sigma's default edge program draws solid lines only — no dash
+ * patterns — so edge type rides a NEUTRAL lightness ramp and the per-type
+ * filter toggles do the discriminating work. Neutral on purpose: hue stays
+ * spent on node kind, and a second categorical hue scale on one canvas is
+ * unreadable. Evidence carries the weight channel, so it gets the darkest ink.
+ */
+const EDGE_COLOR: Record<string, { light: string; dark: string }> = {
+  evidence: { light: "#3f464d", dark: "#a8b1b9" },
+  traversal: { light: "#9aa1a8", dark: "#616a72" },
+  assertion: { light: "#7d858c", dark: "#727b83" },
+};
+const EDGE_FALLBACK = { light: "#9aa1a8", dark: "#616a72" };
+
+export type GraphNode = {
+  id: string;
+  label: string;
+  /** Entity kind — any string; drives the ring hue (categorical only). */
+  type: string;
+  /** Measured magnitude for this entity. Never summed or estimated here. */
+  count: number;
+};
+
+export type GraphEdge = {
+  source: string;
+  target: string;
+  weight: number;
+  /** Edge type. Absent means `evidence` (the historical default). */
+  type?: string;
+  /** For `assertion` edges: the release that introduced the claim.
+   *  Rendered as a badge (edge label) by the renderer. */
+  releaseTag?: string;
+};
+
+export type BuildOptions = {
+  dark?: boolean;
+  /**
+   * Optional per-node interaction frequency (revisits, clicks). Carried as an
+   * attribute and surfaced as TEXT only. Deliberately not mapped to size,
+   * colour or opacity: a node visited fifty times is not more true than one
+   * visited twice, and sharing a channel with `count` would say it is.
+   */
+  visits?: Record<string, number>;
+  /** Override the ring hue per node kind; unknown kinds fall back to a
+   *  deterministic hash of the kind name into the default palette. */
+  kindColors?: Record<string, { light: string; dark: string }>;
+};
+
+/**
+ * The attribute the semantic edge kind is stored under.
+ *
+ * NOT `type`. Sigma reserves `type` on both node and edge display data to name
+ * the RENDERING PROGRAM, so an edge carrying `type: "evidence"` makes the
+ * renderer look for a program by that name and throw before anything paints.
+ * The payload field stays `type` because that is what callers emit; only the
+ * in-graph attribute is renamed, at the one place that reads the payload.
+ */
+export const EDGE_TYPE_ATTR = "edgeType";
+
+export type EdgeKey = string;
+
+/** `(a, b, type)` with the endpoints CANONICALLY ORDERED — without the sort,
+ *  `a|b|evidence` and `b|a|evidence` are different keys and one measured
+ *  relationship becomes two edges drawn on top of each other. */
+export const edgeKey = (source: string, target: string, type: string): EdgeKey => {
+  const [a, b] = source < target ? [source, target] : [target, source];
+  return `${a}|${b}|${type}`;
+};
+
+/** Node radius in Sigma units. sqrt so AREA tracks count, not radius. */
+const sizeFor = (count: number, max: number) =>
+  6 + 18 * Math.sqrt(Math.max(count, 0) / Math.max(max, 1));
+
+/**
+ * Deterministic seed positions on a circle. A force layout moves every node on
+ * its first tick, so the seed costs nothing — but an unseeded (random) start
+ * makes two runs incomparable. Positions are layout, never meaning.
+ */
+const seed = (i: number, n: number) => ({
+  x: Math.cos((2 * Math.PI * i) / Math.max(n, 1)),
+  y: Math.sin((2 * Math.PI * i) / Math.max(n, 1)),
+});
+
+const nodeHue = (type: string, opts: BuildOptions) =>
+  opts.kindColors?.[type] ?? kindHue(type);
+
+const edgeDisplayAttrs = (
+  e: GraphEdge,
+  type: string,
+  evidenceMax: number,
+  dark: boolean,
+) => {
+  const ink = EDGE_COLOR[type] ?? EDGE_FALLBACK;
+  const evidence = isEvidenceEdgeType(type);
+  return {
+    weight: e.weight,
+    [EDGE_TYPE_ATTR]: type,
+    // Measured weights get the width channel. Everything else gets a constant.
+    size: evidence ? 0.6 + 4.4 * (e.weight / evidenceMax) : 1,
+    color: dark ? ink.dark : ink.light,
+    // The assertion badge: Sigma renders the `label` attribute along the edge.
+    ...(type === "assertion" && e.releaseTag
+      ? { label: e.releaseTag, releaseTag: e.releaseTag }
+      : {}),
+  };
+};
+
+const evidenceMaxOf = (edges: readonly GraphEdge[]) =>
+  edges.reduce(
+    (m, e) => (isEvidenceEdgeType(e.type ?? DEFAULT_EDGE_TYPE) ? Math.max(m, e.weight) : m),
+    1,
+  );
+
+export function buildGraph(
+  nodes: readonly GraphNode[],
+  edges: readonly GraphEdge[],
+  opts: BuildOptions = {},
+): Graph {
+  const dark = opts.dark ?? false;
+  const visits = opts.visits ?? {};
+  // Multi + undirected: two relationship kinds on one pair are two rows, and
+  // (a,b) and (b,a) are one row within a kind.
+  const g = new Graph({ multi: true, type: "undirected" });
+
+  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count), 1);
+  nodes.forEach((n, i) => {
+    if (g.hasNode(n.id)) return;
+    const hue = nodeHue(n.type, opts);
+    g.addNode(n.id, {
+      ...seed(i, nodes.length),
+      label: n.label,
+      kind: n.type,
+      count: n.count,
+      // Interaction frequency. An attribute, never a channel.
+      visits: visits[n.id] ?? 0,
+      size: sizeFor(n.count, maxCount),
+      // Ringed nodes: a near-card disc with the kind colour on the RING.
+      // Read by @sigma/node-border in the renderer.
+      color: dark ? "#1c1f22" : "#ffffff",
+      borderColor: dark ? hue.dark : hue.light,
+      borderSize: 0.22,
+    });
+  });
+
+  const evidenceMax = evidenceMaxOf(edges);
+  for (const e of edges) {
+    const type = e.type ?? DEFAULT_EDGE_TYPE;
+    // An edge to a node the payload did not describe would have to invent that
+    // node — and an invented node has no measured count, so it would draw a
+    // magnitude nobody measured. Drop the edge instead.
+    if (!g.hasNode(e.source) || !g.hasNode(e.target)) continue;
+    const key = edgeKey(e.source, e.target, type);
+    // First occurrence wins. Two rows for one (a, b, type) is contradictory
+    // input; picking deterministically is honest, averaging would invent a
+    // number, and last-wins is the overwrite bug this key exists to prevent.
+    if (g.hasEdge(key)) continue;
+    g.addEdgeWithKey(key, e.source, e.target, edgeDisplayAttrs(e, type, evidenceMax, dark));
+  }
+
+  return g;
+}
+
+/** Edge types actually present, in declared order. Drives the filter UI:
+ *  a toggle for a type with no edges is a control that does nothing. */
+export function edgeTypesPresent(g: Graph): EdgeTypeName[] {
+  const seen = new Set<string>();
+  g.forEachEdge((_k, a) => seen.add(a[EDGE_TYPE_ATTR] as string));
+  return EDGE_TYPES.filter((t) => seen.has(t));
+}
+
+/** Per-type edge counts, for labelling the toggles honestly. */
+export function edgeTypeCounts(g: Graph): Record<string, number> {
+  const out: Record<string, number> = {};
+  g.forEachEdge((_k, a) => {
+    const t = a[EDGE_TYPE_ATTR] as string;
+    out[t] = (out[t] ?? 0) + 1;
+  });
+  return out;
+}
+
+/**
+ * Diff `nodes`/`edges` into an EXISTING graph, in place: the no-remount
+ * contract. Rebuilding the graph on every ingestion rebuilds the Sigma
+ * instance (five canvases and the layout), so each update flashes the whole
+ * panel. Sigma reflects Graphology mutations automatically, so patching the
+ * live graph means new elements simply appear.
+ *
+ * New nodes are seeded at their first existing neighbour (plus deterministic
+ * jitter) or the current centroid — never at (0,0): coincident seeds wreck a
+ * force layout, and a fresh node leaping in from the origin reads as exactly
+ * the flicker this function exists to remove.
+ *
+ * Returns WHAT was born, not just how much: a streaming animation layer can
+ * flare exactly the elements that just arrived.
+ */
+export type PatchResult = {
+  added: number;
+  addedNodeIds: string[];
+  addedEdges: { key: string; source: string; target: string }[];
+};
+
+export function patchGraph(
+  g: Graph,
+  nodes: readonly GraphNode[],
+  edges: readonly GraphEdge[],
+  opts: BuildOptions = {},
+): PatchResult {
+  const dark = opts.dark ?? false;
+  const visits = opts.visits ?? {};
+  const addedNodeIds: string[] = [];
+  const addedEdges: { key: string; source: string; target: string }[] = [];
+
+  const maxCount = nodes.reduce((m, n) => Math.max(m, n.count), 1);
+  const jitter = () => (Math.sin(g.order * 12.9898) % 1) * 0.08; // deterministic
+
+  for (const n of nodes) {
+    const hue = nodeHue(n.type, opts);
+    if (g.hasNode(n.id)) {
+      g.mergeNodeAttributes(n.id, {
+        count: n.count,
+        visits: visits[n.id] ?? g.getNodeAttribute(n.id, "visits") ?? 0,
+        size: sizeFor(n.count, maxCount),
+      });
+    } else {
+      // Seed near a neighbour named by the incoming edges, else the centroid.
+      const partner = edges
+        .filter((e) => e.source === n.id || e.target === n.id)
+        .map((e) => (e.source === n.id ? e.target : e.source))
+        .find((id) => g.hasNode(id));
+      let x = 0,
+        y = 0;
+      if (partner) {
+        x = (g.getNodeAttribute(partner, "x") as number) + 0.15 + jitter();
+        y = (g.getNodeAttribute(partner, "y") as number) + 0.15 + jitter();
+      } else if (g.order > 0) {
+        g.forEachNode((_, a) => {
+          x += a.x as number;
+          y += a.y as number;
+        });
+        x = x / g.order + 0.25 + jitter();
+        y = y / g.order + 0.25 + jitter();
+      } else {
+        const s = seed(g.order, Math.max(nodes.length, 1));
+        x = s.x;
+        y = s.y;
+      }
+      g.addNode(n.id, {
+        x,
+        y,
+        label: n.label,
+        kind: n.type,
+        count: n.count,
+        visits: visits[n.id] ?? 0,
+        size: sizeFor(n.count, maxCount),
+        color: dark ? "#1c1f22" : "#ffffff",
+        borderColor: dark ? hue.dark : hue.light,
+        borderSize: 0.22,
+      });
+      addedNodeIds.push(n.id);
+    }
+  }
+  // Sizes scale against maxCount, which a new hub can move: refresh all.
+  g.forEachNode((id, a) => {
+    g.setNodeAttribute(id, "size", sizeFor((a.count as number) ?? 0, maxCount));
+  });
+
+  const evidenceMax = evidenceMaxOf(edges);
+  for (const e of edges) {
+    const type = e.type ?? DEFAULT_EDGE_TYPE;
+    const key = edgeKey(e.source, e.target, type);
+    if (!g.hasNode(e.source) || !g.hasNode(e.target)) continue;
+    const attrs = edgeDisplayAttrs(e, type, evidenceMax, dark);
+    if (g.hasEdge(key)) g.mergeEdgeAttributes(key, attrs);
+    else {
+      g.addEdgeWithKey(key, e.source, e.target, attrs);
+      addedEdges.push({ key, source: e.source, target: e.target });
+    }
+  }
+  return {
+    added: addedNodeIds.length + addedEdges.length,
+    addedNodeIds,
+    addedEdges,
+  };
+}
