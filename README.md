@@ -12,9 +12,17 @@ NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It
 | **Model** | repo root (`src/`) | Artifacts, traces, proposals, sessions into an evidence-backed relationship graph | `npm install && npm test` |
 | **View** | [`render/`](render/) | Live typed-edge rendering: evidence / assertion / traversal edges never look alike, bounded ingestion motion, trust-grammar legend (extracted from TrialScope) | `cd render && npm install && npm run demo` -> http://127.0.0.1:4173 (measured: ~11s) |
 
-They compose — the model produces relationships, the view draws them
-honestly — but neither imports the other today. Each layer keeps its own
-package.json, tests, and README.
+They compose — and [`examples/compose`](examples/compose) proves it in ~15
+lines: the model turns a research room (one sheet, an agent's sourced cells,
+traces, a proposal) into 54 nodes and 102 edges; the renderer draws them
+under the trust grammar. Deliberately conservative: the model's relevance
+weight is not a measured count and its refs carry no release, so every
+relationship renders as traversal — the refusal is the demo.
+
+![The model layer's research room drawn by the live renderer](docs/media/compose.png)
+
+Each layer keeps its own package.json, tests, and README; neither imports
+the other.
 
 It is renderer-friendly rather than renderer-bound: the core graph derivation, filtering, selection, and layout functions are pure TypeScript. A compact React detail panel is included for apps that want the NodeRoom-style selection sidebar.
 
