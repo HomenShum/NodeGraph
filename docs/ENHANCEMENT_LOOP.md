@@ -85,9 +85,17 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    NodeBench's real backend — reactive WebSocket subscription on the real
    getEntityContext query, the repo's own seed script writing through the
    real mutation on camera, rail 0 -> 12 entities with no polling and no
-   replay file (demo/graph-rail-live/live-convex-rail.gif). Remaining
-   caveat: the viewer page is purpose-built; the product's own UI wiring
-   needs the full keyed stack.
+   replay file (demo/graph-rail-live/live-convex-rail.gif). FINAL UPGRADE same day: the rail
+   now lives in the PRODUCT UI (EntityProfilePage, fed by the page's own
+   reactive queries — entityContexts, relationshipGraph, adaptiveProfile),
+   growing 12->13 nodes on camera from a live write
+   (HomenShum/NodeBenchAI@07a55afe, demo/graph-rail-live/product-rail-live.gif).
+   The wiring also fixed a real orphan: the #entity route the backend and
+   seed script both point at had no handler — the profile page was
+   unreachable until now. NodeRoom likewise runs on its LIVE tier
+   (deploy fixed with a proper use-node split, traces gained refs after the
+   live run exposed a 0-edge starvation, HomenShum/NodeRoom@9a7d0311).
+   No caveats remain on the Convex hosts.
    NodeRoom: SHOWN 2026-08-12 — wired into the full
    room UI, real trace stream (edits, locks, drafts, proposals, agent
    status) feeding the rail (HomenShum/NodeRoom@a4d5e86e,
