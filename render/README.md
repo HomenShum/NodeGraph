@@ -31,10 +31,21 @@ neither imports the other. The former standalone repos (`nodegraph-render`,
 
 ## What it looks like
 
-These captures are production evidence from the source product (TrialScope)
-running the renderer this package was extracted from; they are not mockups.
-They demonstrate the visual grammar and motion. The runnable demo below is the
-current standalone package proof.
+**The scenario gallery** — ten scenarios in the bundled demo (`npm run demo`),
+from a 142-entity constellation streaming in over twelve interlocked clusters
+to the deliberately still "calm by contract" case. Captured by
+`scripts/capture-gallery.mjs`; the full cycle is
+[media/gallery/gallery.mp4](media/gallery/gallery.mp4).
+
+![Dense constellation streaming in: 142 entities, 12 clusters, kind-colored rings, edge bloom](media/gallery/hero-dense.gif)
+
+| | | |
+|---|---|---|
+| ![Hub burst](media/gallery/hub-burst.png) | ![Assertion chain with release badges](media/gallery/assertion-chain.png) | ![Deep traversal wavefront](media/gallery/deep-traversal.png) |
+| 36 spokes cascade into one hub | curated claims, release-badged | a chain deepening hop by hop |
+
+**Production provenance** — the captures below are the same stack running
+inside the source product (TrialScope); not mockups.
 
 **A live turn, end to end** — the agent answers, the graph ingests, the
 cinematic window flares the newcomers, then goes still

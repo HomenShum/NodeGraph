@@ -393,7 +393,20 @@ export function patchGraph(
   for (const id of removedNodeIds) g.dropNode(id);
 
   const maxCount = nodes.reduce((m, n) => Math.max(m, n.count ?? 0), 1);
-  const jitter = () => (Math.sin(g.order * 12.9898) % 1) * 0.08; // deterministic
+  // Seed offsets walk the GOLDEN ANGLE around the anchor, so consecutive
+  // births can never be collinear. The first dense capture (142 nodes,
+  // 2026-08-12) measured what the previous "+0.15 + jitter()" on both axes
+  // produced: dx === dy for every birth (same sin(order) in both calls), a
+  // perfectly diagonal seed walk — and force layout preserves collinearity
+  // it is handed, so the whole constellation rendered as a line.
+  const GOLDEN = 2.399963229728653;
+  let births = 0;
+  const offset = (spread: number) => {
+    const i = g.order + births++;
+    const angle = i * GOLDEN;
+    const radius = spread * (0.7 + 0.3 * ((Math.sin(i * 12.9898) + 1) / 2));
+    return { dx: Math.cos(angle) * radius, dy: Math.sin(angle) * radius };
+  };
 
   for (const n of nodes) {
     const hue = nodeHue(n.type, opts);
@@ -413,15 +426,17 @@ export function patchGraph(
       let x = 0,
         y = 0;
       if (partner) {
-        x = (g.getNodeAttribute(partner, "x") as number) + 0.15 + jitter();
-        y = (g.getNodeAttribute(partner, "y") as number) + 0.15 + jitter();
+        const { dx, dy } = offset(0.22);
+        x = (g.getNodeAttribute(partner, "x") as number) + dx;
+        y = (g.getNodeAttribute(partner, "y") as number) + dy;
       } else if (g.order > 0) {
         g.forEachNode((_, a) => {
           x += a.x as number;
           y += a.y as number;
         });
-        x = x / g.order + 0.25 + jitter();
-        y = y / g.order + 0.25 + jitter();
+        const { dx, dy } = offset(0.35);
+        x = x / g.order + dx;
+        y = y / g.order + dy;
       } else {
         const s = seed(g.order, Math.max(nodes.length, 1));
         x = s.x;

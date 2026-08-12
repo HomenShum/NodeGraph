@@ -436,9 +436,21 @@ export function NodeGraph({
         }
         const breath = 0.1 + 0.06 * Math.sin(now / 420 + i * 1.7);
         const born = births.current.nodes.get(id);
-        const flare = born ? Math.max(0, 1 - (now - born) / FLARE_MS) : 0;
-        const alpha = Math.min(0.5, breath + 0.4 * flare);
-        const r = size * (1.6 + 1.6 * flare);
+        // Birth envelope (judged against the morpho reference, 2026-08-11):
+        // a fast ease-out-expo rise (~400ms) into a long exponential decay —
+        // a linear fade reads as a pop. The aura adds a FIXED ~26px on top of
+        // the size channel, so the flare's shape is uniform and encodes
+        // nothing.
+        let flare = 0;
+        if (born) {
+          const age = now - born;
+          flare =
+            age < 400
+              ? 1 - Math.pow(2, (-10 * age) / 400)
+              : Math.exp((-3 * (age - 400)) / (FLARE_MS - 400));
+        }
+        const alpha = Math.min(0.9, breath + 0.7 * flare);
+        const r = size * 1.4 + 26 * flare;
         const g = ctx.createRadialGradient(p.x, p.y, size * 0.4, p.x, p.y, r);
         const c = (a.borderColor as string) ?? "#888";
         g.addColorStop(0, c + "00");
@@ -448,14 +460,32 @@ export function NodeGraph({
         ctx.beginPath();
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
         ctx.fill();
+        // A hot center during the rise; constant palette, no data channel.
+        if (flare > 0.05) {
+          ctx.save();
+          ctx.globalAlpha = 0.9 * flare;
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = c;
+          ctx.fillStyle = dark ? "#ffffff" : c;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.6 + 2.4 * flare, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
         i += 1;
       });
 
       // Comets on newborn edges: a bright head with a fading tail travelling
       // source -> target, twice, then gone. Constant brightness — the edge's
       // width already carries its weight, and the comet must not.
+      // Staggered ~35ms per newborn edge so a batch reads as a wavefront
+      // walking the structure, not a simultaneous sputter. Ordinal, never a
+      // magnitude.
+      let cometIndex = -1;
       for (const [key, born] of births.current.edges) {
-        const age = now - born;
+        cometIndex += 1;
+        const age = now - born - cometIndex * 35;
+        if (age < 0) continue;
         if (age > COMET_MS || !graph.hasEdge(key)) continue;
         const [s, tgt] = graph.extremities(key);
         const a1 = graph.getNodeAttributes(s);
@@ -468,6 +498,31 @@ export function NodeGraph({
           !Number.isFinite(p2.x) ||
           !Number.isFinite(p2.y)
         ) continue;
+        // Dual-pass bloom on the newborn edge itself: a wide soft glow under
+        // a bright 1px core while its comet lives, fading on the same clock.
+        {
+          const glowFade = 1 - age / COMET_MS;
+          const ink = String(graph.getEdgeAttribute(key, "color") ?? "#8ad8ff");
+          ctx.save();
+          ctx.globalAlpha = 0.35 * glowFade;
+          ctx.strokeStyle = ink;
+          ctx.lineWidth = 4;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = ink;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+          ctx.globalAlpha = 0.8 * glowFade;
+          ctx.shadowBlur = 0;
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = dark ? "#e8f4ff" : "#1f4e79";
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+          ctx.restore();
+        }
         const t01 = (age % (COMET_MS / 2)) / (COMET_MS / 2);
         const ease = t01 * t01 * (3 - 2 * t01);
         const hx = p1.x + (p2.x - p1.x) * ease;
@@ -483,17 +538,18 @@ export function NodeGraph({
         ctx.arc(hx, hy, 3.2, 0, Math.PI * 2);
         ctx.fill();
         // tail
-        const tx = p1.x + (p2.x - p1.x) * Math.max(0, ease - 0.22);
-        const ty = p1.y + (p2.y - p1.y) * Math.max(0, ease - 0.22);
+        const tx = p1.x;
+        const ty = p1.y;
         if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
           ctx.restore();
           continue;
         }
         const tg = ctx.createLinearGradient(tx, ty, hx, hy);
         tg.addColorStop(0, "rgba(140,200,255,0)");
-        tg.addColorStop(1, dark ? "rgba(205,238,255,0.7)" : "rgba(42,143,224,0.55)");
+        tg.addColorStop(0.7, dark ? "rgba(160,215,255,0.35)" : "rgba(42,143,224,0.28)");
+        tg.addColorStop(1, dark ? "rgba(205,238,255,0.85)" : "rgba(42,143,224,0.7)");
         ctx.strokeStyle = tg;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(tx, ty);
         ctx.lineTo(hx, hy);
