@@ -12,6 +12,17 @@ NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It
 They compose: this repo produces the relationships, nodegraph-render draws
 them honestly. Neither depends on the other today.
 
+## One repo, two layers
+
+| Layer | Where | What it owns | First win |
+|---|---|---|---|
+| **Model** | repo root (`src/`) | Artifacts, traces, proposals, sessions into an evidence-backed relationship graph | `npm install && npm test` |
+| **View** | [`render/`](render/) | Live typed-edge rendering: evidence / assertion / traversal edges never look alike, bounded ingestion motion, trust-grammar legend (extracted from TrialScope) | `cd render && npm install && npm run demo` -> http://127.0.0.1:4173 (measured: ~11s) |
+
+They compose — the model produces relationships, the view draws them
+honestly — but neither imports the other today. Each layer keeps its own
+package.json, tests, and README.
+
 It is renderer-friendly rather than renderer-bound: the core graph derivation, filtering, selection, and layout functions are pure TypeScript. A compact React detail panel is included for apps that want the NodeRoom-style selection sidebar.
 
 Storyboard first: the README clips are governed by [`docs/FEATURE_PROOF_STORYBOARD.md`](docs/FEATURE_PROOF_STORYBOARD.md). They must prove the relationship story, evidence states, NodeAgent bridge, and trace/tool visibility before they are treated as publishable proof assets.

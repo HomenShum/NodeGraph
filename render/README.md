@@ -7,8 +7,8 @@ the reader has to stay able to tell what is evidence and what is not.
 ## 60 seconds to the running demo
 
 ```sh
-git clone https://github.com/HomenShum/nodegraph-render
-cd nodegraph-render && npm install && npm run demo
+git clone https://github.com/HomenShum/NodeGraph
+cd NodeGraph/render && npm install && npm run demo
 ```
 
 Open <http://127.0.0.1:4173>. You will watch unknown-vs-measured-zero render
@@ -21,18 +21,13 @@ Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
 it by vendoring `src/` or a `file:` dependency; `dist/` builds with
 `npm run build`.
 
-## The NodeGraph family (which repo you want)
+## Where this lives
 
-Two repos share the name because they are two layers of one idea:
-
-| Repo | Layer | What it owns |
-|---|---|---|
-| [`NodeGraph`](https://github.com/HomenShum/NodeGraph) | **model** | The semantic graph: turns artifacts, traces, and proposals into an evidence-backed relationship graph (from NodeRoom) |
-| `nodegraph-render` (this repo) | **view** | Drawing a live graph honestly: typed edges (evidence / assertion / traversal) that never look alike, bounded ingestion motion, draggable layout that never means anything |
-
-They compose: NodeGraph produces the relationships, nodegraph-render draws
-them with the trust grammar. Neither depends on the other today.
-(`NodeGraph-Live` was a short-lived duplicate of this repo; it is archived.)
+This is the **view layer** of the [NodeGraph](https://github.com/HomenShum/NodeGraph)
+repo; the semantic **model layer** (artifacts, traces, proposals into an
+evidence-backed relationship graph) lives at the repo root. They compose but
+neither imports the other. The former standalone repos (`nodegraph-render`,
+`NodeGraph-Live`) are archived pointers to this directory.
 
 ## What it looks like
 
