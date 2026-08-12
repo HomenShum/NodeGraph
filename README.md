@@ -5,6 +5,10 @@ NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It
 > Not yet on npm. Until the `@homenshum/nodegraph` / `@homenshum/nodegraph-live`
 > publishes land, vendor `src/` (or `render/src/`) or use a `file:` dependency.
 
+## What the view layer looks like, live
+
+![The scenario gallery recorded live: dense constellation, assertion chain, hub burst, drag](render/media/gallery-clip.gif)
+
 ## One repo, two layers
 
 | Layer | Where | What it owns | First win |

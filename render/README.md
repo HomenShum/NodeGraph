@@ -6,6 +6,13 @@ the reader has to stay able to tell what is evidence and what is not.
 
 ## 60 seconds to the running demo
 
+![Three gallery scenarios recorded live: a 142-entity dense constellation cascading in with bloom, a receipted assertion chain, a 37-spoke hub burst, then a drag](media/gallery-clip.gif)
+
+*Recorded from the real demo by `scripts/record-gallery-clip.mjs`
+([mp4](media/gallery-clip.mp4)); every scenario is live ingestion, and the
+stillness at each end is the trust grammar, not an edit.*
+
+
 ```sh
 git clone https://github.com/HomenShum/NodeGraph
 cd NodeGraph/render && npm install && npm run demo
