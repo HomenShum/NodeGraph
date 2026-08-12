@@ -80,7 +80,14 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    eval transcript (24 persona-episode runs) replays through the rail
    (HomenShum/NodeBenchAI@76c7de98, demo/graph-rail/graph-rail.png: 34
    entities, 28 traversal edges, every label verified verbatim against the
-   fixture; no assertEdge because no fixture carries a complete receipt).
+   fixture; no assertEdge because no fixture carries a complete receipt). UPGRADED
+   same day: the rail now also runs against a LIVE Convex deployment of
+   NodeBench's real backend — reactive WebSocket subscription on the real
+   getEntityContext query, the repo's own seed script writing through the
+   real mutation on camera, rail 0 -> 12 entities with no polling and no
+   replay file (demo/graph-rail-live/live-convex-rail.gif). Remaining
+   caveat: the viewer page is purpose-built; the product's own UI wiring
+   needs the full keyed stack.
    NodeRoom: SHOWN 2026-08-12 — wired into the full
    room UI, real trace stream (edits, locks, drafts, proposals, agent
    status) feeding the rail (HomenShum/NodeRoom@a4d5e86e,
