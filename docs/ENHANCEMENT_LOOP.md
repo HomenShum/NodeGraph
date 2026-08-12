@@ -81,7 +81,12 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    (HomenShum/NodeBenchAI@76c7de98, demo/graph-rail/graph-rail.png: 34
    entities, 28 traversal edges, every label verified verbatim against the
    fixture; no assertEdge because no fixture carries a complete receipt).
-   NodeRoom: in flight. The
+   NodeRoom: SHOWN 2026-08-12 — wired into the full
+   room UI, real trace stream (edits, locks, drafts, proposals, agent
+   status) feeding the rail (HomenShum/NodeRoom@a4d5e86e,
+   docs/release/media/live-graph-rail.png: 13 entities, 14 edges from 34
+   real events, traversal-only because room events measure nothing and
+   carry no receipts — stated on-surface). The
    pattern: every tool call
    that returns entities feeds `session.observe(entities, measuredCount?)`;
    every curated source feeds `session.assertEdge(a, b, receipt)`. The
