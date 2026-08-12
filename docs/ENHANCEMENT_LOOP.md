@@ -88,7 +88,7 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
 7. **LangGraph, when a workflow adopts it.** Checkpointed state maps to a
    snapshot per step with `thread_id` as the session key; disconnect and
    rejoin replays the graph from durable state instead of losing it.
-8. **The model layer, composed.** `examples/compose/` (queued) bridges the
+8. **The model layer, composed.** `examples/compose/` (SHIPPED 2026-08-12, capture committed) bridges the
    semantic layer at this repo's root into the renderer: the model
    classifies which relationships are source-backed; the renderer refuses
    to draw them like the rest. One repo, two layers, one demo that proves
