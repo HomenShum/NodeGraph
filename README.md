@@ -4,6 +4,23 @@ A typed-edge live graph for agent sessions: Sigma.js + Graphology, React.
 Built for interfaces where a graph accumulates while an agent works, and where
 the reader has to stay able to tell what is evidence and what is not.
 
+## 60 seconds to the running demo
+
+```sh
+git clone https://github.com/HomenShum/nodegraph-render
+cd nodegraph-render && npm install && npm run demo
+```
+
+Open <http://127.0.0.1:4173>. You will watch unknown-vs-measured-zero render
+differently, an evidence edge land, traversal edges join it, and a fully
+receipted Reactome assertion arrive — then press **Add another live branch**
+to replay the ingestion-window lightning. (Measured from a fresh clone:
+running in 11 seconds.)
+
+Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
+it by vendoring `src/` or a `file:` dependency; `dist/` builds with
+`npm run build`.
+
 ## What it looks like
 
 These captures are production evidence from the source product (TrialScope)
@@ -67,6 +84,10 @@ is the product:
    the hand, and it stays paused after release.
 
 ## Install
+
+> **Status: not yet published to npm** — the command below is the intended
+> interface once the publish lands (it requires the owner's npm login).
+> Today, vendor `src/` or use a `file:` dependency against a local clone.
 
 ```sh
 npm install @homenshum/nodegraph-live react
