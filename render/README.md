@@ -224,6 +224,23 @@ npm audit
 npm pack --dry-run
 ```
 
+## MCP: any agent becomes a graph author
+
+`mcp/server.mjs` is a dependency-free stdio MCP server exposing `observe`
+and `assert_edge`, validated by the real `GraphSession` — an assertion
+without a complete replay receipt is refused at the protocol boundary and
+never reaches the event log. `mcp/client-demo.mjs` drives a real JSON-RPC
+session (a research trail, one receipted claim accepted, one unreceipted
+claim refused) and exits nonzero if the boundary fails; `mcp/viewer/` tails
+the accepted-event log into the live rail.
+
+```sh
+node mcp/client-demo.mjs        # real MCP session; asserts the refusal
+python -m http.server 4653      # then open /mcp/viewer/
+```
+
+![The rail authored over MCP: 6 accepted events, the refused one absent](mcp/viewer/mcp-rail.png)
+
 ## The patchGraph no-remount contract
 
 `<NodeGraph>` builds its Graphology graph **once per mount** and reconciles each

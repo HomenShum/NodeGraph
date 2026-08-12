@@ -52,8 +52,10 @@ grammar for free.
 capture is a plan, not a feature.** SHOWN: the origin product (TrialScope,
 vendored renderer — session growth probes, gate videos, assertion captures)
 and this repo's own gallery + compose bridge. PLANNED, zero wiring and zero
-captures today: NodeAgent, NodeBench, NodeRoom, NodeTrace, NodeMem, MCP,
-LangGraph. Each integration below graduates from PLANNED to SHOWN only with
+captures today: NodeAgent, NodeBench, NodeRoom, NodeTrace, NodeMem,
+LangGraph. MCP: SHOWN 2026-08-12 — a bundled client drives a real JSON-RPC
+session, the unreceipted assertion is refused at the boundary, and the
+viewer capture is committed (render/mcp/viewer/mcp-rail.png). Each integration below graduates from PLANNED to SHOWN only with
 a committed capture of the graph ingesting that host's real events — the
 same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
 
@@ -80,11 +82,12 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    proposal: verified citations as evidence edges, policy clauses as
    assertion edges badged with their policy revision, the reviewer's own
    navigation as traversal. The decision packet gets a frozen snapshot.
-6. **MCP.** A thin `nodegraph` MCP server exposing `observe` and
-   `assert_edge` as tools turns ANY MCP-speaking agent into a graph
-   author — the host renders one `<NodeGraph>`, agents stream into it, and
-   the receipts requirement on `assert_edge` refuses unreceipted claims at
-   the protocol boundary.
+6. **MCP (SHOWN 2026-08-12).** `render/mcp/`: a dependency-free stdio
+   server exposing `observe` and `assert_edge`, validated by the real
+   GraphSession — the bundled client's unreceipted assertion is refused at
+   the protocol boundary (exit-nonzero test), accepted events tail into the
+   viewer rail, capture committed. Caveat stated: the driving client is
+   bundled; the first EXTERNAL MCP host wiring upgrades the caveat away.
 7. **LangGraph, when a workflow adopts it.** Checkpointed state maps to a
    snapshot per step with `thread_id` as the session key; disconnect and
    rejoin replays the graph from durable state instead of losing it.
