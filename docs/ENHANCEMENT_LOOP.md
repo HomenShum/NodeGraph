@@ -52,8 +52,10 @@ grammar for free.
 capture is a plan, not a feature.** SHOWN: the origin product (TrialScope,
 vendored renderer — session growth probes, gate videos, assertion captures)
 and this repo's own gallery + compose bridge. PLANNED, zero wiring and zero
-captures today: NodeAgent, NodeBench, NodeRoom, NodeTrace, NodeMem,
-LangGraph. MCP: SHOWN 2026-08-12 — a bundled client drives a real JSON-RPC
+captures today: NodeAgent, NodeBench, NodeRoom, NodeMem,
+LangGraph. NodeTrace: SHOWN 2026-08-12 — real SQLite trace events ingest as
+traversal-only interaction history, capture committed in the host (see item
+3). MCP: SHOWN 2026-08-12 — a bundled client drives a real JSON-RPC
 session, the unreceipted assertion is refused at the boundary, and the
 viewer capture is committed (render/mcp/viewer/mcp-rail.png). Each integration below graduates from PLANNED to SHOWN only with
 a committed capture of the graph ingesting that host's real events — the
