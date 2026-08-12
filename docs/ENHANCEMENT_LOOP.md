@@ -69,7 +69,14 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    `@homenshum/nodegraph-live` and delete the duplicate. Queued as an item
    in its self-run loop: the package is canonical now, and a fix like
    golden-angle seeding must never need porting twice.
-2. **Agent chat hosts (NodeAgent, NodeBench, NodeRoom).** Every tool call
+2. **Agent chat hosts (NodeAgent, NodeBench, NodeRoom).** NodeAgent:
+   SHOWN 2026-08-12 — every step of its real loop feeds the session
+   (HomenShum/NodeAgent@631be93, docs/media/live-graph-rail.png: 12
+   entities, 5 evidence / 21 traversal, with measured counts only from
+   actual artifacts — context items selected, cells changed, citations
+   written — and the missing citation `release` field recorded as the API
+   gap blocking assertions). NodeBench and NodeRoom: in flight. The
+   pattern: every tool call
    that returns entities feeds `session.observe(entities, measuredCount?)`;
    every curated source feeds `session.assertEdge(a, b, receipt)`. The
    participant-count rule does the honesty automatically: two entities with
