@@ -71,9 +71,15 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    a measured count draw evidence; three or more draw traversal history.
    The rail becomes the live answer to "what did the agent just use?" —
    the tool-trace test from the ten-workflow eval table, as a component.
-3. **NodeTrace.** Trace events are literally the traversal class: each
-   step lands as interaction history, and clicking a node deep-links to the
-   Trace Lens step that produced it. One recorder, two views.
+3. **NodeTrace.** (SHOWN 2026-08-12, capture committed) Trace events are
+   literally the traversal class: each step lands as interaction history —
+   `observe()` with no measured count, `assertEdge` never called — and
+   clicking a node lists the trace event ids that produced it. One recorder,
+   two views. Wired in
+   [NodeTrace@cdf3cb5](https://github.com/HomenShum/NodeTrace/commit/cdf3cb5)
+   with the vendored build under `vendor/nodegraph-live/`; the committed
+   capture is NodeTrace's `docs/screenshots/live-graph-rail.png`, regenerated
+   by `npm run capture:live-graph`, which exits nonzero on an empty rail.
 4. **NodeMem.** Passive noticing emits entities with `countState:
    "unknown"` — present, dim, honest. A suggestion becomes an edge only
    when the human confirms it; NodeMem's notice-don't-act contract and this
