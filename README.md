@@ -21,6 +21,19 @@ Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
 it by vendoring `src/` or a `file:` dependency; `dist/` builds with
 `npm run build`.
 
+## The NodeGraph family (which repo you want)
+
+Two repos share the name because they are two layers of one idea:
+
+| Repo | Layer | What it owns |
+|---|---|---|
+| [`NodeGraph`](https://github.com/HomenShum/NodeGraph) | **model** | The semantic graph: turns artifacts, traces, and proposals into an evidence-backed relationship graph (from NodeRoom) |
+| `nodegraph-render` (this repo) | **view** | Drawing a live graph honestly: typed edges (evidence / assertion / traversal) that never look alike, bounded ingestion motion, draggable layout that never means anything |
+
+They compose: NodeGraph produces the relationships, nodegraph-render draws
+them with the trust grammar. Neither depends on the other today.
+(`NodeGraph-Live` was a short-lived duplicate of this repo; it is archived.)
+
 ## What it looks like
 
 These captures are production evidence from the source product (TrialScope)
