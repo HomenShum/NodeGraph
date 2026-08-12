@@ -1,0 +1,259 @@
+# NodeGraph Live
+
+A typed-edge live graph for agent sessions: Sigma.js + Graphology, React.
+Built for interfaces where a graph accumulates while an agent works, and where
+the reader has to stay able to tell what is evidence and what is not.
+
+## 60 seconds to the running demo
+
+```sh
+git clone https://github.com/HomenShum/nodegraph-render
+cd nodegraph-render && npm install && npm run demo
+```
+
+Open <http://127.0.0.1:4173>. You will watch unknown-vs-measured-zero render
+differently, an evidence edge land, traversal edges join it, and a fully
+receipted Reactome assertion arrive — then press **Add another live branch**
+to replay the ingestion-window lightning. (Measured from a fresh clone:
+running in 11 seconds.)
+
+Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
+it by vendoring `src/` or a `file:` dependency; `dist/` builds with
+`npm run build`.
+
+## The NodeGraph family (which repo you want)
+
+Two repos share the name because they are two layers of one idea:
+
+| Repo | Layer | What it owns |
+|---|---|---|
+| [`NodeGraph`](https://github.com/HomenShum/NodeGraph) | **model** | The semantic graph: turns artifacts, traces, and proposals into an evidence-backed relationship graph (from NodeRoom) |
+| `nodegraph-render` (this repo) | **view** | Drawing a live graph honestly: typed edges (evidence / assertion / traversal) that never look alike, bounded ingestion motion, draggable layout that never means anything |
+
+They compose: NodeGraph produces the relationships, nodegraph-render draws
+them with the trust grammar. Neither depends on the other today.
+(`NodeGraph-Live` was a short-lived duplicate of this repo; it is archived.)
+
+## What it looks like
+
+These captures are production evidence from the source product (TrialScope)
+running the renderer this package was extracted from; they are not mockups.
+They demonstrate the visual grammar and motion. The runnable demo below is the
+current standalone package proof.
+
+**A live turn, end to end** — the agent answers, the graph ingests, the
+cinematic window flares the newcomers, then goes still
+([mp4 version](media/live-agent-session-graph.mp4)):
+
+![Live agent turn: answer, ingestion, flare, still](media/live-agent-session-graph.gif)
+
+**The three trust classes on one panel.** A violet `assertion` edge (a
+curated claim) lands beside the session's measured content; clicking the
+node discloses its release tag — *"Co-inhibition by PD-1 (reactome-v97) —
+curated statements from the named release, not measurements"*:
+
+![Assertion edge with release-tag readout beside measured evidence](media/assertion-selection-readout.png)
+
+**The ingestion window, mid-flare** — motion runs only while an ingestion is
+live (measured as lit overlay pixels: >0 mid-window, exactly 0 after decay),
+and never encodes magnitude:
+
+![Cinematic layer mid-ingestion](media/t2-cinematic-live.png)
+
+![Lightning flare on the side panel, production capture](media/live-lightning-side-panel.png)
+
+**Steady state** — a second entity has landed and the conjunction drew its
+evidence edge; width tracks the measured weight, and the panel legend says
+which edges are evidence and which are only interaction history:
+
+![Two-entity conjunction with probed evidence edge](media/t2-conjunction-edge.png)
+
+## The three trust rules
+
+Chart libraries treat all edges alike. This one refuses to, and that refusal
+is the product:
+
+1. **Edge types are visually distinct because their epistemics are distinct.**
+   `evidence` edges carry measured weights (an API count, a database
+   aggregate) and own the width channel. `traversal` edges are interaction
+   history — telemetry about *us*, not evidence about the world — and get a
+   constant width, labelled "local" next to their toggle. `assertion` edges
+   are curated claims, badged with the release that introduced them, never
+   widened, and rejected unless they carry a full replay receipt: source,
+   release, both source identifiers, and a literal HTTP(S) URL. Measured
+   evidence, curated assertions, and interaction history must never look alike.
+
+2. **Motion only during ingestion windows, and never encoding magnitude.**
+   The cinematic layer (birth flares, comets on newborn edges, breath halos)
+   runs only inside the live window a real ingestion opens, then the rAF loop
+   exits and the canvas is still. Animation means "the system did this just
+   now" — it is never "the system is thinking", and no animated property
+   encodes a value. `prefers-reduced-motion` skips it entirely.
+
+3. **Positions are layout, never meaning.** Seed positions are deterministic
+   (circle seeds; new nodes seed at a neighbour or the centroid with
+   deterministic jitter — never at the origin). Nodes are draggable, and a
+   drag has no semantic effect: the layout pauses so physics does not fight
+   the hand, and it stays paused after release.
+
+## Install
+
+> **Status: not yet published to npm** — the command below is the intended
+> interface once the publish lands (it requires the owner's npm login).
+> Today, vendor `src/` or use a `file:` dependency against a local clone.
+
+```sh
+npm install @homenshum/nodegraph-live react
+```
+
+React >= 18 is a peer dependency. Published packages contain compiled ESM and
+declarations in `dist/`; application consumers do not compile this repository's
+TypeScript source. Core/session imports are safe in Node. The WebGL React
+renderer lives in the explicit browser/client-only `/react` entry; SSR code
+must import it dynamically on the client because Sigma needs WebGL globals at
+module load.
+
+## Usage
+
+```tsx
+import { useSyncExternalStore } from "react";
+import { GraphSession } from "@homenshum/nodegraph-live";
+import { NodeGraph } from "@homenshum/nodegraph-live/react";
+
+const session = new GraphSession();
+
+// Two participants + a measured conjunction -> `evidence` edge (weight 362).
+session.observe(
+  [{ kind: "condition", label: "melanoma" }, { kind: "intervention", label: "ipilimumab" }],
+  362,
+  { eventId: "tool-call-17" },
+);
+
+// Three or more participants -> pairwise `traversal` edges only: a measured
+// count belongs to the whole conjunction, and drawing it on any single pair
+// would claim a pair count nothing measured.
+session.observe([
+  { kind: "condition", label: "melanoma" },
+  { kind: "intervention", label: "ipilimumab" },
+  { kind: "sponsor", label: "BMS" },
+]);
+
+// A curated claim, badged with the release that introduced it.
+session.assertEdge(
+  { kind: "reaction", label: "BRAF mutants bind MAPKs" },
+  { kind: "pathway", label: "Oncogenic MAPK signaling" },
+  {
+    source: "Reactome",
+    release: "v97",
+    subjectId: "R-HSA-6802912",
+    objectId: "R-HSA-6802957",
+    url: "https://reactome.org/content/detail/R-HSA-6802912",
+  },
+  { eventId: "reactome:R-HSA-6802912:R-HSA-6802957:v97" },
+);
+
+function Panel() {
+  const snap = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  return <NodeGraph nodes={snap.nodes} edges={snap.edges} visits={session.visitsById()} />;
+}
+```
+
+You can also bypass the session store and feed `NodeGraph` (or `buildGraph` /
+`patchGraph` directly) with your own `{ nodes, edges }`, or ingest a whole
+subgraph payload with `session.ingest({ entities, relationships })`.
+
+## The reliability contract
+
+This panel is often left open while an agent performs hundreds of calls. The
+default session therefore retains at most 1,000 nodes, 3,000 edges, and 5,000
+deduplication receipts. Override those bounds explicitly when constructing the
+session:
+
+```ts
+const session = new GraphSession({ maxNodes: 500, maxEdges: 1_200, maxSeen: 2_000 });
+```
+
+Eviction is FIFO and deterministic. Removing a session node also removes its
+incident edges, and `patchGraph` reconciles those removals into the live
+Graphology graph so the renderer does not retain stale state.
+
+Event idempotence uses the full, key-sorted payload. An exact retry does
+nothing; reusing the same `eventId` with changed content throws instead of
+silently hiding the change. Without an explicit id, the complete canonical
+payload is the deduplication key. Deduplication is intentionally bounded by
+`maxSeen`, not an unbounded promise about the lifetime of a browser tab.
+
+Two absence rules are also executable API contracts:
+
+- A missing node `count` means **unknown / not measured**. A `count` of `0`
+  means **measured zero**. The selection readout states the difference.
+- Edge `type` is required at runtime. Missing or unknown types reject the
+  complete batch before any partial graph is drawn; there is no evidence
+  fallback.
+
+## Run the visual demo
+
+```sh
+npm install
+npm run build
+npm run demo
+```
+
+Open `http://127.0.0.1:4173`. The demo first shows unknown beside measured
+zero, then ingests an evidence edge, traversal edges, and a fully receipted
+Reactome assertion one at a time. Use **Add another live branch** to replay the
+ingestion-window lightning effect.
+
+![Standalone demo during a live ingestion window](media/standalone-demo-mid-ingestion.png)
+
+The scenario suite uses Node's built-in test runner, so no test framework is
+added:
+
+```sh
+npm test
+npm run typecheck
+npm run verify:demo
+npm audit
+npm pack --dry-run
+```
+
+## The patchGraph no-remount contract
+
+`<NodeGraph>` builds its Graphology graph **once per mount** and reconciles each
+complete `{nodes, edges}` snapshot into it in place. `patchGraph` returns the
+exact node ids and edge keys added or removed, so the cinematic layer flares
+only newcomers while bounded-store eviction removes stale renderer state. It
+never rebuilds the Sigma instance. Rebuilding on every update tears down five
+canvases and the layout per ingestion — the whole panel flashes. Internally a
+`rev` counter invalidates memos, because mutations do not change the graph's
+object identity.
+
+Two model invariants back this up:
+
+- The edge key is `(min(a,b), max(a,b), type)` on a multigraph, so a
+  traversal count can never silently overwrite a measured evidence weight.
+- The width scale is computed over evidence edges only, so a 900-visit
+  traversal edge cannot stretch the scale measured weights are read against.
+
+## Provenance
+
+Extracted from **TrialScope** (a clinical-trials count-probe explorer),
+where this stack rendered the session's accumulated entity graph next to the
+chat. TrialScope-specific wire-format parsing (capability manifests, trace
+step parsing) stayed behind; the participant-count ingestion rule, the typed
+edge model, the patch contract, the drag behaviour, and the cinematic layer
+are ported intact. Edge types were renamed for the general case:
+`co-occurrence` → `evidence`, `agent-traversal` → `traversal`, and
+`assertion` (with a replayable source receipt) is new.
+
+One measured note from the source repo (its `MEASUREMENTS.md` #62, produced
+by its `web/scripts/bench-graph.mjs`, not re-run here): the Sigma/Cytoscape
+interaction crossover sits between N=300 and N=600 — at N=300 Cytoscape still
+clicked faster (1.3 ms vs 1.6 ms), at N=600 Sigma led for the first time —
+but Cytoscape's blocking `cose` layout (1.4 s at N=300, 122 s at N=2500) is
+what actually makes it unusable at scale; Sigma dropped no frames up to
+N=2500 in that benchmark.
+
+## License
+
+MIT © 2026 Homen Shum

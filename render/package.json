@@ -1,0 +1,61 @@
+{
+  "name": "@homenshum/nodegraph-live",
+  "version": "0.1.0",
+  "description": "Typed-edge live graph for agent sessions: measured evidence, curated assertions, and interaction history never look alike.",
+  "license": "MIT",
+  "author": "Homen Shum",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HomenShum/NodeGraph-Live.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
+  },
+  "files": [
+    "dist",
+    "demo",
+    "media",
+    "scripts/browser-demo-gate.mjs",
+    "scripts/probe-demo.mjs",
+    "scripts/serve-demo.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/clean.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "pretest": "npm run build",
+    "test": "node --test tests/*.test.mjs",
+    "prepack": "npm run build",
+    "demo": "node scripts/serve-demo.mjs",
+    "verify:demo": "node scripts/probe-demo.mjs && node scripts/browser-demo-gate.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "@sigma/node-border": "^3.0.0",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "sigma": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "typescript": "^5.6.0"
+  }
+}
