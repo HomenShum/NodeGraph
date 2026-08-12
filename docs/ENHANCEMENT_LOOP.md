@@ -48,6 +48,15 @@ history, visibly distinct, streaming as work happens. Each integration
 below wires a real event stream into `GraphSession` and inherits the
 grammar for free.
 
+**Status stamps, verified 2026-08-12 — because an integration without a
+capture is a plan, not a feature.** SHOWN: the origin product (TrialScope,
+vendored renderer — session growth probes, gate videos, assertion captures)
+and this repo's own gallery + compose bridge. PLANNED, zero wiring and zero
+captures today: NodeAgent, NodeBench, NodeRoom, NodeTrace, NodeMem, MCP,
+LangGraph. Each integration below graduates from PLANNED to SHOWN only with
+a committed capture of the graph ingesting that host's real events — the
+same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
+
 1. **TrialScope (the origin) consumes the package.** The product still runs
    a vendored copy of this renderer; it should depend on
    `@homenshum/nodegraph-live` and delete the duplicate. Queued as an item
