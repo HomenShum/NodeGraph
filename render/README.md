@@ -1,4 +1,4 @@
-# NodeGraph Live
+# NodeGraph · Live renderer
 
 A typed-edge live graph for agent sessions: Sigma.js + Graphology, React.
 Built for interfaces where a graph accumulates while an agent works, and where
@@ -98,7 +98,8 @@ is the product:
 > Today, vendor `src/` or use a `file:` dependency against a local clone.
 
 ```sh
-npm install @homenshum/nodegraph-live react
+npm install file:../path-to/NodeGraph/render react   # until the npm publish lands
+# after publish: npm install @homenshum/nodegraph-live react
 ```
 
 React >= 18 is a peer dependency. Published packages contain compiled ESM and

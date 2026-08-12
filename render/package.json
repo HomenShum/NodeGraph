@@ -6,7 +6,8 @@
   "author": "Homen Shum",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HomenShum/NodeGraph-Live.git"
+    "url": "git+https://github.com/HomenShum/NodeGraph.git",
+    "directory": "render"
   },
   "type": "module",
   "main": "./dist/index.js",

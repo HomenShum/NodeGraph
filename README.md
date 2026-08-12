@@ -2,15 +2,8 @@
 
 NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It turns room-like artifacts, spreadsheet rows, notebook blocks, evidence payloads, traces, proposals, sessions, and members into an evidence-backed relationship graph.
 
-## The NodeGraph family (which repo you want)
-
-| Repo | Layer | What it owns |
-|---|---|---|
-| `NodeGraph` (this repo) | **model** | The semantic graph: artifacts, traces, proposals, sessions into an evidence-backed relationship graph |
-| [`nodegraph-render`](https://github.com/HomenShum/nodegraph-render) | **view** | Live typed-edge rendering (evidence / assertion / traversal never look alike), bounded ingestion motion, trust-grammar legend — extracted from TrialScope |
-
-They compose: this repo produces the relationships, nodegraph-render draws
-them honestly. Neither depends on the other today.
+> Not yet on npm. Until the `@homenshum/nodegraph` / `@homenshum/nodegraph-live`
+> publishes land, vendor `src/` (or `render/src/`) or use a `file:` dependency.
 
 ## One repo, two layers
 
@@ -25,9 +18,7 @@ package.json, tests, and README.
 
 It is renderer-friendly rather than renderer-bound: the core graph derivation, filtering, selection, and layout functions are pure TypeScript. A compact React detail panel is included for apps that want the NodeRoom-style selection sidebar.
 
-Storyboard first: the README clips are governed by [`docs/FEATURE_PROOF_STORYBOARD.md`](docs/FEATURE_PROOF_STORYBOARD.md). They must prove the relationship story, evidence states, NodeAgent bridge, and trace/tool visibility before they are treated as publishable proof assets.
-
-Public Node repo integrations are tracked in [`docs/PUBLIC_NODE_REPO_INTEGRATIONS.md`](docs/PUBLIC_NODE_REPO_INTEGRATIONS.md): NodeMem memory clusters, NodeTrace causality, NodeRL proof episodes, and the NodeTasks `public-node-repo-proofs` bundle.
+Cross-repo integration notes live in `docs/internal/`.
 
 ![NodeGraph product showcase](docs/media/nodegraph-showcase.gif)
 
@@ -56,7 +47,7 @@ import {
   selectSemanticGraphCluster,
   selectSemanticNeighborhood,
   summarizeSemanticGraphClusters,
-} from "nodegraph";
+} from "@homenshum/nodegraph";
 
 const graph = buildSemanticGraph({
   roomId: "room-1",
