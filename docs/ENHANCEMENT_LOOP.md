@@ -75,7 +75,13 @@ same gate EVIDENCE.md enforces in the origin repo. No capture, no claim.
    entities, 5 evidence / 21 traversal, with measured counts only from
    actual artifacts — context items selected, cells changed, citations
    written — and the missing citation `release` field recorded as the API
-   gap blocking assertions). NodeBench and NodeRoom: in flight. The
+   gap blocking assertions). NodeBench: SHOWN-with-caveat 2026-08-12 —
+   its Convex/key walls cannot be honestly bypassed, so a committed real
+   eval transcript (24 persona-episode runs) replays through the rail
+   (HomenShum/NodeBenchAI@76c7de98, demo/graph-rail/graph-rail.png: 34
+   entities, 28 traversal edges, every label verified verbatim against the
+   fixture; no assertEdge because no fixture carries a complete receipt).
+   NodeRoom: in flight. The
    pattern: every tool call
    that returns entities feeds `session.observe(entities, measuredCount?)`;
    every curated source feeds `session.assertEdge(a, b, receipt)`. The
