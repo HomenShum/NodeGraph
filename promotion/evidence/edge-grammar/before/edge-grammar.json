@@ -1,0 +1,104 @@
+{
+  "measuredAt": "2026-08-13T11:54:09.265Z",
+  "scenario": "Assertion chain",
+  "viewport": "1280x900",
+  "thresholds": {
+    "deltaE2000": 15,
+    "greyscaleContrast": 1.6
+  },
+  "edgeInk": {
+    "dark": {
+      "evidence": "#a8b1b9",
+      "traversal": "#616a72",
+      "assertion": "#727b83"
+    },
+    "light": {
+      "evidence": "#3f464d",
+      "traversal": "#9aa1a8",
+      "assertion": "#7d858c"
+    }
+  },
+  "nodeRingInk": {
+    "dark": {
+      "condition": "#c29c2e",
+      "intervention": "#c29c2e",
+      "protein": "#c29c2e",
+      "reaction": "#d95926",
+      "pathway": "#199e70"
+    }
+  },
+  "pairs": [
+    {
+      "theme": "dark",
+      "pair": "assertion vs evidence",
+      "inks": [
+        "#727b83",
+        "#a8b1b9"
+      ],
+      "deltaE2000": 17.77,
+      "greyscaleContrast": 1.98,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "pair": "assertion vs traversal",
+      "inks": [
+        "#727b83",
+        "#616a72"
+      ],
+      "deltaE2000": 6.7,
+      "greyscaleContrast": 1.28,
+      "pass": false
+    },
+    {
+      "theme": "dark",
+      "pair": "evidence vs traversal",
+      "inks": [
+        "#a8b1b9",
+        "#616a72"
+      ],
+      "deltaE2000": 24.81,
+      "greyscaleContrast": 2.53,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "pair": "assertion vs evidence",
+      "inks": [
+        "#7d858c",
+        "#3f464d"
+      ],
+      "deltaE2000": 23.4,
+      "greyscaleContrast": 2.55,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "pair": "assertion vs traversal",
+      "inks": [
+        "#7d858c",
+        "#9aa1a8"
+      ],
+      "deltaE2000": 9.44,
+      "greyscaleContrast": 1.43,
+      "pass": false
+    },
+    {
+      "theme": "light",
+      "pair": "evidence vs traversal",
+      "inks": [
+        "#3f464d",
+        "#9aa1a8"
+      ],
+      "deltaE2000": 35.95,
+      "greyscaleContrast": 3.66,
+      "pass": true
+    }
+  ],
+  "failures": [
+    "dark: assertion vs traversal",
+    "light: assertion vs traversal"
+  ],
+  "consoleErrors": [],
+  "verdict": "FAIL"
+}

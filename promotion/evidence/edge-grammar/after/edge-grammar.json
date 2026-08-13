@@ -1,0 +1,101 @@
+{
+  "measuredAt": "2026-08-13T11:59:28.822Z",
+  "scenario": "Assertion chain",
+  "viewport": "1280x900",
+  "thresholds": {
+    "deltaE2000": 15,
+    "greyscaleContrast": 1.6
+  },
+  "edgeInk": {
+    "dark": {
+      "evidence": "#c2cad1",
+      "traversal": "#5b646d",
+      "assertion": "#a276ee"
+    },
+    "light": {
+      "evidence": "#3f464d",
+      "traversal": "#9aa1a8",
+      "assertion": "#7c4ae0"
+    }
+  },
+  "nodeRingInk": {
+    "dark": {
+      "condition": "#c29c2e",
+      "intervention": "#c29c2e",
+      "protein": "#c29c2e",
+      "reaction": "#d95926",
+      "pathway": "#199e70"
+    }
+  },
+  "pairs": [
+    {
+      "theme": "dark",
+      "pair": "assertion vs evidence",
+      "inks": [
+        "#a276ee",
+        "#c2cad1"
+      ],
+      "deltaE2000": 23.04,
+      "greyscaleContrast": 1.99,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "pair": "assertion vs traversal",
+      "inks": [
+        "#a276ee",
+        "#5b646d"
+      ],
+      "deltaE2000": 22.37,
+      "greyscaleContrast": 1.82,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "pair": "evidence vs traversal",
+      "inks": [
+        "#c2cad1",
+        "#5b646d"
+      ],
+      "deltaE2000": 33.67,
+      "greyscaleContrast": 3.63,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "pair": "assertion vs evidence",
+      "inks": [
+        "#7c4ae0",
+        "#3f464d"
+      ],
+      "deltaE2000": 21.83,
+      "greyscaleContrast": 1.78,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "pair": "assertion vs traversal",
+      "inks": [
+        "#7c4ae0",
+        "#9aa1a8"
+      ],
+      "deltaE2000": 26.47,
+      "greyscaleContrast": 2.05,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "pair": "evidence vs traversal",
+      "inks": [
+        "#3f464d",
+        "#9aa1a8"
+      ],
+      "deltaE2000": 35.95,
+      "greyscaleContrast": 3.66,
+      "pass": true
+    }
+  ],
+  "failures": [],
+  "consoleErrors": [],
+  "verdict": "PASS"
+}

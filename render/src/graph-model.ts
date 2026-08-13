@@ -77,16 +77,44 @@ const kindHue = (kind: string): { light: string; dark: string } => {
 };
 
 /**
- * Edge ink. Sigma's default edge program draws solid lines only — no dash
- * patterns — so edge type rides a NEUTRAL lightness ramp and the per-type
- * filter toggles do the discriminating work. Neutral on purpose: hue stays
- * spent on node kind, and a second categorical hue scale on one canvas is
- * unreadable. Evidence carries the weight channel, so it gets the darkest ink.
+ * Edge ink. THE THREE TRUST CLASSES MUST NEVER BE CONFUSABLE — that is the
+ * binding rule, and it is the one this map exists to satisfy.
+ *
+ * It used to fail. The original reasoning reserved hue entirely for node kind
+ * and width entirely for evidence magnitude, which left one channel —
+ * lightness — to carry a THREE-way categorical distinction against a single
+ * background. A one-dimensional ramp cannot hold three mutually
+ * distinguishable steps there, so two of them landed on top of each other:
+ * assertion `#727b83` against traversal `#616a72` measured CIEDE2000 6.70 in
+ * dark and 9.44 in light (`promotion/evidence/edge-grammar/before/`), and the
+ * stated mitigation was that "the per-type filter toggles do the
+ * discriminating work" — which only holds by switching the other classes OFF,
+ * i.e. exactly the state the rule is not about. Meanwhile both READMEs and the
+ * demo caption described a violet assertion edge that was never drawn.
+ *
+ * So assertion takes the hue it was always documented to have. That does not
+ * collide with the categorical node-kind scale: kind hue is a RING around a
+ * disc, edge ink is a line — different marks, and only one edge class is
+ * chromatic. Evidence carries the weight channel, so it keeps the strongest
+ * neutral ink; traversal keeps the faintest.
+ *
+ * Hue is not allowed to be the ONLY separator, because a reader with no colour
+ * vision must still separate all three, so the three inks also hold three
+ * distinct luminances. The dark ramp had to WIDEN to make room: at
+ * `#a8b1b9`/`#616a72` the whole evidence-to-traversal span was 2.53:1, and two
+ * 1.6:1 steps need 2.56:1, so a third step could not fit between them at all.
+ * That is the same crowding that produced the original collision, one level
+ * up. Dark now spans 3.63:1 (evidence/assertion 1.99, assertion/traversal
+ * 1.83); light already had the room and only assertion moved.
+ *
+ * Enforced, not asserted: `render/tests/edge-grammar.test.mjs` scores every
+ * pair in both themes, and `promotion/scripts/prove-edge-grammar.mjs` re-reads
+ * these values out of the rendered demo.
  */
 const EDGE_COLOR: Record<EdgeTypeName, { light: string; dark: string }> = {
-  evidence: { light: "#3f464d", dark: "#a8b1b9" },
-  traversal: { light: "#9aa1a8", dark: "#616a72" },
-  assertion: { light: "#7d858c", dark: "#727b83" },
+  evidence: { light: "#3f464d", dark: "#c2cad1" },
+  traversal: { light: "#9aa1a8", dark: "#5b646d" },
+  assertion: { light: "#7c4ae0", dark: "#a276ee" },
 };
 
 export type GraphNode = {
