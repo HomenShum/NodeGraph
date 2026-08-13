@@ -35,8 +35,8 @@ count, and the line rows below show why that distinction matters here.
 | `examples/compose` runnable from a script | **no command existed** | `npm run example:compose` | fixed | see "compose" below |
 | Production bundle (showcase, JS) | 492.45 kB / 152.43 kB gzip | 492.41 kB / 152.43 kB gzip | −0.04 kB | `npm run example:build` |
 | Production bundle (showcase, CSS) | 26.05 kB | 26.05 kB | 0 | same |
-| Doc pointers validated | no checker existed | 16 files, 34 tour steps, exit 0 | new | `npm run docs:check` |
-| Additions / deletions | — | 49 files, +1,584 / −132 | — | `git diff --shortstat HEAD` |
+| Doc pointers validated | no checker existed | 22 files, 34 tour steps, exit 0 | new | `npm run docs:check` |
+| Additions / deletions | — | 55 files changed, 1845 insertions(+), 769 deletions(-) | — | `git diff --shortstat cf9f686 HEAD` |
 
 ### Read the line rows honestly
 
