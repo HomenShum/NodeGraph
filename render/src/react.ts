@@ -4,5 +4,3 @@ export {
   type NodeClickMessage,
   type ContextMessage,
 } from "./NodeGraph.js";
-
-export { default } from "./NodeGraph.js";

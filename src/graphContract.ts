@@ -3,7 +3,7 @@ import type {
   SemanticGraphEdge,
   SemanticGraphPosition,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 export const NODEGRAPH_DOCUMENT_SCHEMA = "nodegraph.document" as const;
 export const NODEGRAPH_DOCUMENT_VERSION = 1 as const;

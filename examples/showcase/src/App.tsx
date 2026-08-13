@@ -10,7 +10,6 @@ import {
   createNodeGraphAgentTools,
   exportNodeGraphDocument,
   layoutSemanticGraph,
-  neo4jSyncPlanJson,
   nodeGraphDocumentJson,
   parseNodeGraphDocument,
   selectSemanticNeighborhood,
@@ -282,7 +281,7 @@ export function ShowcaseApp() {
         <div className="graphPane">
           <div className="graphToolbar" role="toolbar" aria-label="NodeGraph data and layout controls">
             <button type="button" onClick={() => downloadText("nodegraph-showcase.json", nodeGraphDocumentJson(exportDocument()))} title="Export NodeGraph JSON"><Download size={14} /> JSON</button>
-            <button type="button" onClick={() => downloadText("nodegraph-neo4j-sync.json", neo4jSyncPlanJson(buildNeo4jSyncPlan(exportDocument())))} title="Export Neo4j sync plan"><Download size={14} /> Neo4j</button>
+            <button type="button" onClick={() => downloadText("nodegraph-neo4j-sync.json", JSON.stringify(buildNeo4jSyncPlan(exportDocument()), null, 2))} title="Export Neo4j sync plan"><Download size={14} /> Neo4j</button>
             <button type="button" onClick={() => importInputRef.current?.click()} title="Import NodeGraph JSON"><Upload size={14} /> Import</button>
             <input ref={importInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => { void importGraph(event.target.files?.[0]); event.target.value = ""; }} />
             <button type="button" onClick={toggleSelectedPin} disabled={!selected} title={selected && pinnedNodeIds.has(selected) ? "Unpin selected node" : "Pin selected node"} aria-label={selected && pinnedNodeIds.has(selected) ? "Unpin selected node" : "Pin selected node"}>

@@ -1,4 +1,4 @@
-import type { Actor, AgentSession, Artifact, CellStatus, Member, Proposal, TraceEvent } from "./types";
+import type { Actor, AgentSession, Artifact, CellStatus, Member, Proposal, TraceEvent } from "./types.js";
 
 export type SemanticGraphNodeKind =
   | "person"

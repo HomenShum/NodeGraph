@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent, type ReactElement } from "react";
 import { Bot, Loader2, Send, Sparkles } from "lucide-react";
-import type { SemanticGraphNode, SemanticGraphStats, SemanticGraphViewModel } from "./semanticGraphTypes";
+import type { SemanticGraphNode, SemanticGraphStats, SemanticGraphViewModel } from "./semanticGraphTypes.js";
 
 export interface NodeGraphAgentPanelRequest {
   prompt: string;

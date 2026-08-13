@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/*.mjs",
+        "promotion/scripts/*.mjs",
+        "examples/showcase/src/main.tsx",
+        "examples/compose/compose.js",
+        "tests/*.test.ts"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.mjs",
+        "promotion/scripts/**/*.mjs",
+        "examples/showcase/src/**/*.{ts,tsx}",
+        "examples/compose/**/*.js",
+        "tests/**/*.ts"
+      ]
+    },
+    "render": {
+      "entry": [
+        "src/index.ts",
+        "src/react.ts",
+        "scripts/*.mjs",
+        "mcp/server.mjs",
+        "mcp/client-demo.mjs",
+        "mcp/viewer/viewer.js",
+        "demo/demo.js",
+        "examples/basic.tsx",
+        "tests/*.test.mjs"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.mjs",
+        "mcp/**/*.{mjs,js}",
+        "demo/**/*.js",
+        "examples/**/*.tsx",
+        "tests/**/*.mjs"
+      ]
+    }
+  }
+}

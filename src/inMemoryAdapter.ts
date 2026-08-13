@@ -7,8 +7,8 @@ import {
   type NodeGraphDocument,
   type NodeGraphLayoutState,
   type NodeGraphProvenance,
-} from "./graphContract";
-import type { SemanticGraphViewModel } from "./semanticGraphTypes";
+} from "./graphContract.js";
+import type { SemanticGraphViewModel } from "./semanticGraphTypes.js";
 
 export type NodeGraphSyncReceipt = {
   adapter: "memory";

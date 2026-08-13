@@ -1,4 +1,4 @@
-import type { SemanticGraphEdge, SemanticGraphEdgeKind, SemanticGraphRef, SemanticGraphStatus, SemanticGraphViewModel } from "./semanticGraphTypes";
+import type { SemanticGraphEdge, SemanticGraphEdgeKind, SemanticGraphRef, SemanticGraphStatus, SemanticGraphViewModel } from "./semanticGraphTypes.js";
 
 export type GraphRelationshipReviewStatus = "confirmed" | "needs_confirmation";
 
@@ -178,10 +178,6 @@ export function buildGraphRelationshipReviewPlan(graph: SemanticGraphViewModel, 
     integrityHash,
     items,
   };
-}
-
-export function graphRelationshipReviewJson(plan: GraphRelationshipReviewPlan): string {
-  return `${JSON.stringify(plan, null, 2)}\n`;
 }
 
 export function graphRelationshipReviewFileName(graphId: string, integrityHash: string): string {

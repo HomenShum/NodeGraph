@@ -21,16 +21,20 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "prebuild": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "tsc -p tsconfig.json",
+    "postbuild": "node -e \"import('./dist/index.js').then((m) => { const n = Object.keys(m).length; if (n < 30) throw new Error('dist/index.js loaded but exported only ' + n + ' names'); })\"",
     "prepare": "npm run build",
     "example:build": "vite build examples/showcase --outDir ../../dist-showcase --emptyOutDir",
     "example:dev": "vite examples/showcase --host 127.0.0.1 --port 5174",
+    "example:compose": "npm run build && npm --prefix render run build && node render/scripts/serve-demo.mjs . /examples/compose/index.html",
     "showcase:capture": "node scripts/capture-showcase.mjs",
     "streamlit:agent": "node examples/streamlit/nodeagent_server.mjs",
     "streamlit:capture": "node scripts/capture-streamlit-showcase.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "proof:edge-grammar": "node promotion/scripts/prove-edge-grammar.mjs"
+    "proof:edge-grammar": "node promotion/scripts/prove-edge-grammar.mjs",
+    "docs:check": "node scripts/check-docs.mjs"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
@@ -42,7 +46,6 @@
   "devDependencies": {
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^5.1.0",
     "@xyflow/react": "^12.11.0",
     "playwright": "^1.56.1",
     "react": "^19.2.3",

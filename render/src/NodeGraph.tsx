@@ -782,5 +782,3 @@ export function NodeGraph({
     </section>
   );
 }
-
-export default NodeGraph;

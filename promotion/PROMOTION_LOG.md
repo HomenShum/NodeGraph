@@ -80,10 +80,10 @@ reproduction; a hunch is not a defect.
 
 | # | Severity | Journey | Reproduction | Status |
 |---|----------|---------|--------------|--------|
-| D1 | major | J1 | Fresh clone → `cd render && npm install && npm run verify:demo` → **exit 1**, `demo proof failed: {…"liveButton":false…}`. `render/scripts/probe-demo.mjs:35` asserts the demo HTML contains the string `Add another live branch`; that string exists nowhere under `render/demo/`. The gate's second half would fail too: `render/scripts/browser-demo-gate.mjs:178` clicks `#add-branch`, and `grep -rn "add-branch" demo/ src/` returns nothing. The repo's own rendered-demo gate is stale relative to the ten-scenario gallery that replaced the single-branch demo. | open |
-| D2 | major | J1 | `render/README.md:23` ("then press **Add another live branch**") and `:218` tell a first-time reader to press a control that does not exist. Rendered at 1280x900, the page offers ten scenario chips and no such button; `document.body.innerText.includes('Add another live branch')` is `false` in all seven captured states (`report.json` → every step's `addBranchText`). The first instruction a stranger follows after the app starts is wrong. | open |
+| D1 | major | J1 | Fresh clone → `cd render && npm install && npm run verify:demo` → **exit 1**, `demo proof failed: {…"liveButton":false…}`. `render/scripts/probe-demo.mjs:35` asserts the demo HTML contains the string `Add another live branch`; that string exists nowhere under `render/demo/`. The gate's second half would fail too: `render/scripts/browser-demo-gate.mjs:178` clicks `#add-branch`, and `grep -rn "add-branch" demo/ src/` returns nothing. The repo's own rendered-demo gate is stale relative to the ten-scenario gallery that replaced the single-branch demo. | **fixed, wave 3** — `verify:demo` exits 0 on 6/6 consecutive runs; see `docs/SIMPLIFICATION_REPORT.md`. |
+| D2 | major | J1 | `render/README.md:23` ("then press **Add another live branch**") and `:218` tell a first-time reader to press a control that does not exist. Rendered at 1280x900, the page offers ten scenario chips and no such button; `document.body.innerText.includes('Add another live branch')` is `false` in all seven captured states (`report.json` → every step's `addBranchText`). The first instruction a stranger follows after the app starts is wrong. | **fixed, wave 3** — both passages now describe the ten scenario chips that exist. |
 | D3 | major | J2 | Press **Assertion chain** at 1280x900. The caption under the stage reads "violet assertion edges, each carrying a full replay receipt" (`render/demo/demo.js:146`) and `render/README.md:63` says "A violet `assertion` edge". Nothing violet is drawn: `render/src/graph-model.ts:89` sets `assertion: { dark: "#727b83" }` against `traversal: { dark: "#616a72" }` and `evidence: { dark: "#a8b1b9" }` — two near-identical greys about 1.3:1 apart. See `09-selection-readout.png`: the only thing separating a curated claim from interaction history in the drawing is the small `v97` label. The repo's binding rule is that these three classes never look alike, and the docs describe a colour channel the renderer does not implement. | **fixed, iteration 1** — measured at 6.70 CIEDE2000 dark / 9.44 light, now 22.37 / 26.47. `promotion/evidence/edge-grammar/` |
-| D4 | major | J4 | The root README presents `examples/compose` as the proof that the two layers are one product, with a screenshot. There is no command to run it: no script in either `package.json`, no mention in "Development" or "Example App", and `examples/compose/compose.js` imports `../../dist/semanticGraph.js` and `../../render/dist/index.js`, so it also silently requires both layers to be built. It renders correctly once served — "model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal …)", 0 console errors (`13-compose.png`) — but only from a static server written by hand for this capture. | open |
+| D4 | major | J4 | The root README presents `examples/compose` as the proof that the two layers are one product, with a screenshot. There is no command to run it: no script in either `package.json`, no mention in "Development" or "Example App", and `examples/compose/compose.js` imports `../../dist/semanticGraph.js` and `../../render/dist/index.js`, so it also silently requires both layers to be built. It renders correctly once served — "model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal …)", 0 console errors (`13-compose.png`) — but only from a static server written by hand for this capture. | **fixed, wave 3** — `npm run example:compose` builds both layers and serves it; re-proved in headless Chromium, 0 console errors, `promotion/evidence/wave3/`. |
 | D5 | major | J1 | At 390x844 (`07-mobile-390.png`) the page itself is fine — chips wrap, 0 px horizontal overflow — but the graph is only shrunk, never fitted: the camera keeps its desktop framing, so "intervention h…" and "biomarker hub…" are clipped at the canvas edge and roughly half the constellation sits outside the visible stage. `render/demo/index.html` also pins `#root { min-height: 620px }`, so the canvas stays taller than most of a phone screen. A `fit` control exists but the reader has to know to press it. | open |
 | D6 | minor | J1 | The live counter under the stage ("142 entities · 145 edges", `#stats`) is `rgb(85,96,106)` on `#0b0e12` — measured 3.01:1, below the 4.5:1 AA minimum for body text (`report6.json` → `contrast`). It is the one text element on the page that fails; the other 19 measured pass. | open |
 | D7 | major | J2 | A keyboard-only reader can reach every scenario chip (Tab, visible ring, Enter activates — `05-keyboard-focus.png`) but can never open a node, and the node readout is where "measured 0" vs "unknown", and the Reactome receipt, are disclosed. Measured on the rendered page: 8 `<canvas>` elements, 0 with a `role` or `aria-label`; `[data-testid="nodegraph-canvas"]` has no `tabindex`; 0 `aria-live` regions on a surface whose content streams in while the reader watches (`report6.json` → `basics`). | open |
@@ -164,3 +164,36 @@ reproduction; a hunch is not a defect.
   palette is measured but never photographed. Neither blocks D3 — the
   three-way comparison is in `edge-grammar.json` — but a gallery that cannot
   display its own headline rule in one picture is worth a future iteration.
+
+---
+
+## Wave 3 — 2026-08-13 — human-readiness (a second, separate loop)
+
+Wave 3 does not ask "can a stranger use this product"; it asks **"can a stranger
+maintain it"**. Gate:
+<https://github.com/HomenShum/NodeKit/blob/main/templates/promotion/HUMAN_READY.md>.
+
+Full before/after measurements, every evidence command, and the findings left
+unresolved with their reasons: **[`docs/SIMPLIFICATION_REPORT.md`](../docs/SIMPLIFICATION_REPORT.md)**.
+The runtime-order walkthrough is [`docs/START_HERE.md`](../docs/START_HERE.md);
+the same walks are clickable in [`.tours/`](../.tours).
+
+- **Deleted:** `scripts/build.mjs` (a 40-line ESM specifier rewriter that
+  `tsc` plus explicit `.js` specifiers already do — the convention `render/`
+  used all along), `render/scripts/clean.mjs`, three public
+  `JSON.stringify` wrappers, a duplicate default export, and the
+  `@vitejs/plugin-react` devDependency that no vite config ever wired in.
+- **Closed from the ledger above:** D1, D2, D4. D1's fix uncovered three further
+  defects in the same gate — a decay sample timed into a still-streaming
+  scenario (reading 87,317 lit pixels and calling it failure), a canvas-clear
+  race that made a single pixel sample read 0 one run in five, and an `EBUSY`
+  in cleanup that turned an already-printed PASS into exit 1 on Windows. All
+  three are fixed and the reasoning is in the comments at the failure site.
+- **Still open:** D5, D6, D7. Each is feature work, not structural cleanup, and
+  wave 3's rules forbid mixing the two. D7 (the graph is unreachable by
+  keyboard, and the node readout is where the trust grammar is disclosed) is the
+  highest-impact item left in this repository.
+- **Tests:** root `npm test` 14 passed, `cd render && npm test` 11 passed, both
+  typechecks 0, `npm run build` 0, `npm run docs:check` 0,
+  `npm run proof:edge-grammar` PASS 6/6 pairs, `cd render && npm run
+  verify:demo` **exit 0 on six consecutive runs** (was exit 1 at baseline).

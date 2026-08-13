@@ -1,13 +1,13 @@
 import { z, type ZodTypeAny } from "zod";
-import { applySemanticGraphFilters } from "./semanticGraphFilters";
-import { semanticNodePrimaryAction, selectSemanticNeighborhood } from "./semanticGraphSelectors";
+import { applySemanticGraphFilters } from "./semanticGraphFilters.js";
+import { semanticNodePrimaryAction, selectSemanticNeighborhood } from "./semanticGraphSelectors.js";
 import type {
   SemanticGraphEdge,
   SemanticGraphFilters,
   SemanticGraphNode,
   SemanticGraphSelection,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 export interface NodeGraphAgentMessageLike {
   role: "user" | "assistant" | "tool";

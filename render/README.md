@@ -18,11 +18,14 @@ git clone https://github.com/HomenShum/NodeGraph
 cd NodeGraph/render && npm install && npm run demo
 ```
 
-Open <http://127.0.0.1:4173>. You will watch unknown-vs-measured-zero render
-differently, an evidence edge land, traversal edges join it, and a fully
-receipted Reactome assertion arrive — then press **Add another live branch**
-to replay the ingestion-window lightning. (Measured from a fresh clone:
-running in 11 seconds.)
+Open <http://127.0.0.1:4173>. The page opens on **Dense constellation**, the
+142-entity scenario, already streaming in. Above the stage is a row of ten
+scenario chips — press any of them to replay that scenario from an empty
+session and watch the ingestion-window lightning again. **Unknown vs zero**
+shows the two absence states rendering differently; **Evidence lands** shows a
+measured edge arriving; **Assertion chain** shows fully receipted Reactome
+claims in violet. (Measured from a fresh clone: `npm install` 8s, the server
+answers immediately after.)
 
 Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
 it by vendoring `src/` or a `file:` dependency; `dist/` builds with
@@ -213,10 +216,11 @@ npm run build
 npm run demo
 ```
 
-Open `http://127.0.0.1:4173`. The demo first shows unknown beside measured
-zero, then ingests an evidence edge, traversal edges, and a fully receipted
-Reactome assertion one at a time. Use **Add another live branch** to replay the
-ingestion-window lightning effect.
+Open `http://127.0.0.1:4173`. Each of the ten scenario chips above the stage
+rebuilds an empty session and streams one story into it: unknown beside
+measured zero, an evidence edge landing, traversal history joining it, a fully
+receipted Reactome assertion chain. Pressing a chip again replays it, which is
+how you re-open the ingestion-window lightning.
 
 ![Standalone demo during a live ingestion window](media/standalone-demo-mid-ingestion.png)
 

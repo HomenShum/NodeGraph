@@ -1,0 +1,73 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "3 · Debug and recovery: retries, eviction, and the gates that catch a lie",
+  "description": "What happens when the same event arrives twice, when memory fills, and when a check goes stale. Also: which command to run when you want to know whether the thing is actually working.",
+  "steps": [
+    {
+      "file": "render/src/session.ts",
+      "line": 136,
+      "title": "A retry must not make a relationship look stronger",
+      "description": "Every mutating call fingerprints its canonical payload first. An exact retry is a silent no-op. The important half is the other branch: an eventId reused with DIFFERENT content throws, because silently overwriting would let one id hide a changed claim."
+    },
+    {
+      "file": "render/src/session.ts",
+      "line": 80,
+      "title": "Canonical JSON, so the fingerprint is stable",
+      "description": "Object keys sort; arrays keep caller order (order is meaning in a relationship list). Without this, the same event serialised twice in different key order would look like two different events."
+    },
+    {
+      "file": "render/src/session.ts",
+      "line": 159,
+      "title": "Eviction is deterministic and reaches the screen",
+      "description": "Oldest-inserted node leaves first, and its edges leave with it. `patchGraph` reconciles removals in place, so eviction actually reaches the Graphology/Sigma surface instead of leaving invisible stale state to grow forever. Press 'Bounded memory' in the demo to watch it."
+    },
+    {
+      "file": "render/src/graph-model.ts",
+      "line": 414,
+      "title": "Removals, not just additions",
+      "description": "Props are the complete snapshot. Anything in the live graph that the snapshot no longer names is dropped here. This is the line that makes the bounded session honest on screen rather than only in memory."
+    },
+    {
+      "file": "render/scripts/probe-demo.mjs",
+      "line": 38,
+      "title": "A gate that outlived the thing it was checking",
+      "description": "This line used to assert the page contained the string 'Add another live branch' — a button that the ten-scenario gallery deleted. `npm run verify:demo` therefore exited 1 on every fresh clone, and both READMEs told first-time readers to press it. Lesson for the next reader: when you delete a control, grep the gates."
+    },
+    {
+      "file": "render/scripts/browser-demo-gate.mjs",
+      "line": 197,
+      "title": "Why the pixel check samples five times",
+      "description": "Each ingestion re-runs the overlay effect, and re-running it resizes (therefore clears) the canvas one frame before the next paint. A single sample during a fast stream read 0 about one run in five. The measured numbers are in the comment. Take the brightest of several; a genuinely dead overlay still reads 0 in all of them."
+    },
+    {
+      "file": "render/scripts/browser-demo-gate.mjs",
+      "line": 220,
+      "title": "Wait for a condition, not a clock",
+      "description": "'Calm by contract' sends exactly one event, so its live window closes at a knowable moment — that is why the live-then-still assertion is measured against it twice instead of against whatever the page happened to be doing. The earlier version timed its 'decay' sample into the middle of a still-streaming scenario and read 87,317 lit pixels: the demo working, reported as failing."
+    },
+    {
+      "file": "render/scripts/browser-demo-gate.mjs",
+      "line": 273,
+      "title": "Cleanup must not overwrite the verdict",
+      "description": "Chrome's child processes keep handles inside the temp profile; on Windows this `rmSync` threw EBUSY even after five retries, turning a run that had already printed a PASSING proof into exit 1. A disposable temp directory is not the gate's verdict."
+    },
+    {
+      "file": "promotion/scripts/prove-edge-grammar.mjs",
+      "line": 40,
+      "title": "The independent proof: read the ink out of the rendered page",
+      "description": "`npm run proof:edge-grammar` drives the real demo in headless Chromium and reads the edge colours out of the demo's own built bundle, in the page, through the same buildGraph call the component makes on mount — then scores all six pairs in CIEDE2000 and greyscale contrast. It spawns and kills its own server on its own port, so it cannot grade a stranger's orphaned process."
+    },
+    {
+      "file": "render/tests/sustained-session.test.mjs",
+      "line": 95,
+      "title": "A bad limit is an error, never a silent 'unbounded'",
+      "description": "'degraded path: invalid capacity fails at construction instead of becoming an unbounded fallback'. The dangerous version of this bug is the forgiving one."
+    },
+    {
+      "file": "docs/codebase/CONCERNS.md",
+      "line": 1,
+      "title": "What is still wrong, written down",
+      "description": "Five defects remain open with reproductions, including the one that matters most for accessibility: the graph itself is unreachable by keyboard, and the node readout is where the trust grammar is actually disclosed."
+    }
+  ]
+}

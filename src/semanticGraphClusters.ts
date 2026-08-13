@@ -1,4 +1,4 @@
-import type { SemanticGraphCluster, SemanticGraphNode, SemanticGraphViewModel } from "./semanticGraphTypes";
+import type { SemanticGraphCluster, SemanticGraphNode, SemanticGraphViewModel } from "./semanticGraphTypes.js";
 
 export type SemanticGraphClusterSummary = {
   id: string;

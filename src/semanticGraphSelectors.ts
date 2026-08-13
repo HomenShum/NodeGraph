@@ -4,8 +4,8 @@ import type {
   SemanticGraphSelection,
   SemanticGraphSelectionSection,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
-import { rankSemanticConnectionPaths } from "./semanticGraphPaths";
+} from "./semanticGraphTypes.js";
+import { rankSemanticConnectionPaths } from "./semanticGraphPaths.js";
 
 const section = (
   id: string,

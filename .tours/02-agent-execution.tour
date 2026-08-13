@@ -1,0 +1,67 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "2 · Agent execution: an agent authors the graph, and gets refused",
+  "description": "The browser is not the only caller. This tour follows an MCP tool call from stdin to the event log, and shows why the refusal path is the interesting one. Run it: cd render && node mcp/client-demo.mjs",
+  "steps": [
+    {
+      "file": "render/mcp/server.mjs",
+      "line": 20,
+      "title": "The server imports the REAL session",
+      "description": "Not a copy of the rules, not a schema that happens to agree — the same `GraphSession` the React panel uses. If an agent could author through a laxer path, the trust grammar would hold in the UI and leak everywhere else."
+    },
+    {
+      "file": "render/mcp/server.mjs",
+      "line": 32,
+      "title": "Tool registration is an array",
+      "description": "Two tools, no registry abstraction and no plugin loader. Note where the invariant is written: in the tool DESCRIPTIONS. 'Never pass a count you did not measure' has to reach the model, because the model picks the arguments before any validator sees them."
+    },
+    {
+      "file": "render/mcp/server.mjs",
+      "line": 82,
+      "title": "Invocation: validate first, record second",
+      "description": "`session.observe(...)` runs BEFORE `record(...)`. That ordering is the whole design: a call the session refuses throws here, so nothing is appended to the event log and no downstream viewer ever sees it."
+    },
+    {
+      "file": "render/src/graph-model.ts",
+      "line": 159,
+      "title": "What 'a complete receipt' actually means",
+      "description": "Source, release, both stable endpoint ids, and a URL that parses AND uses http(s). A curated claim without a replayable receipt does not enter the graph — it is not downgraded to a weaker edge, it is refused."
+    },
+    {
+      "file": "render/src/session.ts",
+      "line": 292,
+      "title": "assertEdge: curated is not measured",
+      "description": "An assertion carries a receipt and a constant width. It can never pass as a measurement, because width is the evidence channel and assertion never gets it. The release string becomes the badge drawn along the edge."
+    },
+    {
+      "file": "render/mcp/server.mjs",
+      "line": 121,
+      "title": "The refusal goes back verbatim",
+      "description": "The session's own error message is what the agent reads — 'receipt.release must be a non-empty string' — so the agent can correct itself rather than guessing. `isError: true`, and the event log is untouched."
+    },
+    {
+      "file": "render/src/session.ts",
+      "line": 320,
+      "title": "Batch ingestion validates the WHOLE batch first",
+      "description": "Every node and every edge is checked before a single one is stored. A renderer that paints half a batch and then discovers an unknown edge type has already made a false claim on screen."
+    },
+    {
+      "file": "src/nodeAgentBridge.ts",
+      "line": 92,
+      "title": "The model layer's agent tools, for contrast",
+      "description": "Five zod-typed tools over a built semantic graph — overview, search, neighborhood, evidence summary, open questions. All read-only. The model layer's graph comes from `buildSemanticGraph`, not from an agent, so there is nothing here for an agent to corrupt."
+    },
+    {
+      "file": "src/semanticGraph.ts",
+      "line": 1022,
+      "title": "Where the model layer's graph actually comes from",
+      "description": "Artifacts, members, traces, proposals, decks and sessions in; nodes, edges and clusters out. Each `derive*` call below is one source of relationships. Add a new source by adding one function and one call — that is the extension point."
+    },
+    {
+      "file": "render/tests/trust-boundary.test.mjs",
+      "line": 66,
+      "title": "The refusal is a test, not a promise",
+      "description": "'adversarial path: unknown edge types and incomplete assertion receipts fail before mutation'. Run `cd render && npm test` — 11 tests on Node's built-in runner, no framework added."
+    }
+  ]
+}

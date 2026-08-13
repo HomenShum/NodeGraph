@@ -4,7 +4,7 @@ import type {
   SemanticGraphNode,
   SemanticGraphStatus,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 export interface RankSemanticConnectionPathsOptions {
   maxHops?: number;

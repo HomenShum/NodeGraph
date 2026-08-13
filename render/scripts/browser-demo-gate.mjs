@@ -168,16 +168,41 @@ try {
     await wait(100);
   }
 
-  await wait(900);
-  const initialLive = await pixelSample();
-  await wait(900);
-  const expandedLive = await pixelSample();
-  await wait(3_800);
-  const initialDecay = await pixelSample();
-
-  await evaluate("document.querySelector('#add-branch').click()")
-  await wait(1_900);
-  const replayLive = await pixelSample();
+  // The page opens on "Dense constellation", which streams for ~6s. That is
+  // the frame the README's mid-ingestion screenshot is supposed to show, so
+  // photograph it here — and do NOT try to measure stillness against it: every
+  // event extends the live window, so a scenario that is still streaming has
+  // not yet earned its decay. (Before this rewrite the gate sampled "decay" at
+  // 5.6s into that stream and read 87,317 lit pixels, which was the demo
+  // working, not failing.)
+  // Wait for a CONDITION, not a clock: the page's own entity counter passing
+  // 30 means the stream is genuinely mid-flight, so the live window is open and
+  // there are nodes to breathe. Sampling at a fixed 900ms read 0 lit pixels on
+  // a slow load — the assertion was measuring the machine, not the renderer.
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const entities = await evaluate(
+      "Number((document.querySelector('#stats')?.textContent ?? '0').split(' ')[0])",
+    );
+    if (entities >= 30) break;
+    if (attempt === 59) throw new Error("dense constellation never reached 30 entities");
+    await wait(100);
+  }
+  // Take the BRIGHTEST of several samples. Every ingestion re-runs the overlay
+  // effect, and re-running it resizes (therefore clears) the canvas one frame
+  // before the next paint — so a single sample during a fast stream reads 0
+  // roughly one time in five. Measured: 111935, 117493, 0, 118256 on four
+  // single-sample runs of the same unchanged code. Several samples spanning
+  // more than one frame cannot all land in that gap, and a genuinely dead
+  // overlay still reads 0 in all of them.
+  const brightestLit = async (samples) => {
+    let lit = 0;
+    for (let index = 0; index < samples; index += 1) {
+      lit = Math.max(lit, (await pixelSample()).lit);
+      await wait(60);
+    }
+    return { lit };
+  };
+  const denseLive = await brightestLit(5);
   const screenshot = await cdp.call("Page.captureScreenshot", {
     format: "png",
     fromSurface: true,
@@ -187,6 +212,28 @@ try {
     resolve(root, "media", "standalone-demo-mid-ingestion.png"),
     Buffer.from(screenshot.data, "base64"),
   );
+
+  // Live-then-still is measured against ONE known ingestion instead of a
+  // wall-clock guess. "Calm by contract" sends a single event at 300ms, so its
+  // live window closes at ~3.5s: sample inside it twice, then well past it.
+  // Picking the chip by its visible name is exactly how a reader triggers one.
+  const pressCalm = () =>
+    evaluate(`[...document.querySelectorAll('#scenarios button')]
+      .find((button) => button.textContent === 'Calm by contract')
+      .click()`);
+
+  await pressCalm();
+  await wait(900);
+  const initialLive = await pixelSample();
+  await wait(900);
+  const expandedLive = await pixelSample();
+  await wait(3_800);
+  const initialDecay = await pixelSample();
+
+  // Press it again: the window must REOPEN and then close again.
+  await pressCalm();
+  await wait(1_900);
+  const replayLive = await pixelSample();
   await wait(3_500);
   const replayDecay = await pixelSample();
 
@@ -196,6 +243,7 @@ try {
       (event.method === "Runtime.consoleAPICalled" && event.params?.type === "error"),
   );
   const proof = {
+    denseLive: denseLive.lit,
     initialLive: initialLive.lit,
     expandedLive: expandedLive.lit,
     initialDecay: initialDecay.lit,
@@ -204,6 +252,7 @@ try {
     browserErrors: browserErrors.length,
   };
   if (
+    proof.denseLive <= 0 ||
     proof.initialLive <= 0 ||
     proof.expandedLive <= 0 ||
     proof.initialDecay !== 0 ||
@@ -218,5 +267,14 @@ try {
 } finally {
   await stop(chromeProcess);
   await stop(server);
-  rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch {
+    // Chrome's own child processes can still hold handles inside the profile
+    // after the launcher exits — on Windows this throws EBUSY even after the
+    // five built-in retries, and it did: a run that had already printed a
+    // PASSING proof exited 1 from here. The profile is a disposable directory
+    // under the OS temp dir, so failing to unlink it is not the gate's verdict.
+    process.stdout.write(`left temp Chrome profile behind: ${profile}\n`);
+  }
 }

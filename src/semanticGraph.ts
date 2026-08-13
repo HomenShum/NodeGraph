@@ -1,4 +1,4 @@
-import type { Actor, Artifact, CellEvidence, CellPayload, DataframeColumn, Element } from "./types";
+import type { Actor, Artifact, CellEvidence, CellPayload, DataframeColumn, Element } from "./types.js";
 import {
   CELL_STATUS_TO_SEMANTIC_STATUS,
   type SemanticGraphCluster,
@@ -13,7 +13,7 @@ import {
   type SemanticGraphViewModel,
   type DeckClaimStatus,
   type DeckStoryboardStatus,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 const DEFAULT_MAX_ROWS_PER_SHEET = 80;
 const DEFAULT_MAX_EVIDENCE_FACTS = 180;

@@ -1,5 +1,5 @@
-import type { SemanticGraphEdge, SemanticGraphNode, SemanticGraphViewModel } from "./semanticGraphTypes";
-import { diffNodeGraphDocuments, parseNodeGraphDocument, type NodeGraphDelta, type NodeGraphDocument } from "./graphContract";
+import type { SemanticGraphEdge, SemanticGraphNode, SemanticGraphViewModel } from "./semanticGraphTypes.js";
+import { diffNodeGraphDocuments, parseNodeGraphDocument, type NodeGraphDelta, type NodeGraphDocument } from "./graphContract.js";
 
 export interface Neo4jQueryBatch {
   purpose: "metadata" | "nodes" | "relationships" | "delete_relationships" | "delete_nodes";
@@ -217,10 +217,3 @@ export async function executeNeo4jSyncPlan(session: Neo4jSessionLike, plan: Neo4
   for (const batch of plan.batches) await session.run(batch.statement, batch.parameters);
 }
 
-export function neo4jSyncPlanJson(plan: Neo4jSyncPlan): string {
-  return `${JSON.stringify(plan, null, 2)}\n`;
-}
-
-export function neo4jUpsertPlanJson(plan: Neo4jUpsertPlan): string {
-  return `${JSON.stringify(plan, null, 2)}\n`;
-}

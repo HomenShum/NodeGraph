@@ -3,7 +3,7 @@ import type {
   SemanticGraphFilters,
   SemanticGraphNode,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 const matchesQuery = (node: SemanticGraphNode, query: string): boolean => {
   const q = query.toLowerCase();

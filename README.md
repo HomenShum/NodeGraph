@@ -23,6 +23,13 @@ under the trust grammar. Deliberately conservative: the model's relevance
 weight is not a measured count and its refs carry no release, so every
 relationship renders as traversal — the refusal is the demo.
 
+```bash
+npm install
+npm run example:compose   # builds both layers, then serves the page
+```
+
+Open <http://127.0.0.1:4173/examples/compose/index.html>.
+
 ![The model layer's research room drawn by the live renderer](docs/media/compose.png)
 
 Each layer keeps its own package.json, tests, and README; neither imports
@@ -119,11 +126,25 @@ See `docs/nodeagent-integration.md` for the NodeRoom wiring.
 
 ## Development
 
+New here? Read **[docs/START_HERE.md](docs/START_HERE.md)** first — it walks one
+real user action through the code in the order it executes, and
+[`.tours/`](.tours) is the same walk as clickable CodeTours.
+
+Each layer has its own commands, because each is its own package:
+
 ```bash
+# model layer (repo root)
 npm install
 npm run typecheck
-npm test
+npm test          # vitest, 14 tests
 npm run build
+
+# view layer
+cd render
+npm install
+npm run typecheck
+npm test          # node:test, 11 tests
+npm run verify:demo   # serves the demo, drives it in headless Chrome
 ```
 
 ## Example App

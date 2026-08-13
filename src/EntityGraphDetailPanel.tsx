@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { ExternalLink, GitBranch, X } from "lucide-react";
-import type { SemanticGraphSelection } from "./semanticGraphTypes";
-import { semanticNodePrimaryAction } from "./semanticGraphSelectors";
+import type { SemanticGraphSelection } from "./semanticGraphTypes.js";
+import { semanticNodePrimaryAction } from "./semanticGraphSelectors.js";
 
 interface EntityGraphDetailPanelProps {
   selection: SemanticGraphSelection;

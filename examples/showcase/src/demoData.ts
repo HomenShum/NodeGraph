@@ -1,8 +1,8 @@
 import type { Actor, Artifact, DataframeColumn, Element, Proposal, TraceEvent } from "../../../src/types";
 import type { DeckStoryboard } from "../../../src/semanticGraphTypes";
 
-export const maya: Actor = { kind: "user", id: "u-maya", name: "Maya" };
-export const priya: Actor = { kind: "user", id: "u-priya", name: "Priya" };
+const maya: Actor = { kind: "user", id: "u-maya", name: "Maya" };
+const priya: Actor = { kind: "user", id: "u-priya", name: "Priya" };
 export const agent: Actor = { kind: "agent", id: "room-nodeagent", name: "Room NodeAgent", scope: "public" };
 
 const columns: DataframeColumn[] = [

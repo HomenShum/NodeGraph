@@ -3,7 +3,7 @@ import type {
   SemanticGraphNode,
   SemanticGraphPosition,
   SemanticGraphViewModel,
-} from "./semanticGraphTypes";
+} from "./semanticGraphTypes.js";
 
 const KIND_ORDER: Record<string, number> = {
   artifact: 0,

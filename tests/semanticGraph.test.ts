@@ -5,7 +5,7 @@ import { applySemanticGraphFilters } from "../src/semanticGraphFilters";
 import { selectSemanticGraphCluster, summarizeSemanticGraphClusters } from "../src/semanticGraphClusters";
 import { layoutSemanticGraph } from "../src/semanticGraphLayout";
 import { selectSemanticNeighborhood } from "../src/semanticGraphSelectors";
-import { buildGraphRelationshipReviewPlan, graphRelationshipReviewFileName, graphRelationshipReviewJson } from "../src/relationshipReview";
+import { buildGraphRelationshipReviewPlan, graphRelationshipReviewFileName } from "../src/relationshipReview";
 import { buildNeo4jSyncPlan, buildNeo4jUpsertPlan, executeNeo4jSyncPlan, executeNeo4jUpsertPlan } from "../src/neo4jAdapter";
 import { exportNodeGraphDocument, nodeGraphDocumentJson, parseNodeGraphDocument, semanticGraphFingerprint } from "../src/graphContract";
 import { InMemoryNodeGraphAdapter } from "../src/inMemoryAdapter";
@@ -206,7 +206,7 @@ describe("semantic entity graph", () => {
 
     expect(plan.reviewVersion).toBe(1);
     expect(plan.integrityHash).toBe(second.integrityHash);
-    expect(graphRelationshipReviewJson(plan)).toBe(graphRelationshipReviewJson(second));
+    expect(JSON.stringify(plan)).toBe(JSON.stringify(second));
     expect(plan.relationshipCount).toBe(graph.edges.length);
     expect(plan.confirmedCount + plan.needsConfirmationCount).toBe(plan.relationshipCount);
     expect(plan.confirmedCount).toBeGreaterThan(0);

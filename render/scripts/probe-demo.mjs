@@ -32,7 +32,10 @@ try {
   const proof = {
     htmlStatus: html.status,
     title: html.body.includes("NodeGraph Live"),
-    liveButton: html.body.includes("Add another live branch"),
+    // The control rail the README tells a first-time reader to press. It was
+    // `#add-branch` until the ten-scenario gallery replaced the single-branch
+    // demo; the assertion outlived the button and failed every fresh clone.
+    scenarioRail: html.body.includes('id="scenarios"'),
     demoStatus: demo.status,
     assertionReceipt: demo.body.includes("subjectId"),
     componentStatus: component.status,
