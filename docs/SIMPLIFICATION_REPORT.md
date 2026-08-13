@@ -16,6 +16,7 @@ count, and the line rows below show why that distinction matters here.
 | Production source lines (same set) | 7,466 | 7,554 | **+88** | same list piped to `xargs wc -l \| tail -1` |
 | Library source lines only (`src/` + `render/src/`) | 5,042 | 5,027 | −15 | `cat src/*.ts src/*.tsx render/src/* \| wc -l` |
 | Direct dependencies (both packages, incl. peer) | 20 | 19 | −1 | `node -e "const a=require('./package.json'),b=require('./render/package.json');const c=o=>Object.keys(o\|\|{}).length;console.log(c(a.dependencies)+c(a.devDependencies)+c(a.peerDependencies)+c(b.dependencies)+c(b.devDependencies)+c(b.peerDependencies))"` |
+| Installed package tree, model layer | 122 | 76 | **−46** | `rm -rf node_modules && npm install --no-audit --no-fund` |
 | Public runtime exports, model layer | 36 | 33 | −3 | `npm run build && node -e "import('./dist/index.js').then(m=>console.log(Object.keys(m).length))"` |
 | Unused files | 0 | 0 | 0 | `npx knip@5 --no-progress` |
 | Unused exports | 2 | 0 | −2 | `npx knip@5 --no-progress` |
@@ -160,6 +161,21 @@ into a dirty working tree. Added to `render/.gitignore`.
 | **`selectSemanticEdge` and `semanticGraphIndexes` are unused outside `src/`** | `selectSemanticEdge` is the only producer of `selection.selectedEdge`, which `EntityGraphDetailPanel` and `nodeAgentBridge` both render. Deleting it deletes the edge-selection *capability*, not dead code. Rule 1 says preserve observable behavior. |
 | **`docs/internal/`, `ENHANCEMENT_LOOP.md`, `PRODUCT_AUDIT_2026-08-12.md`** | Cross-repo planning notes about other repositories. Not verified in this pass; flagged in `STRUCTURE.md` as ignorable on day one rather than deleted, because they are somebody's working record. |
 | **The demo needs network** (`esm.sh` import map) | Deliberate: the demo's claim is that the renderer needs no bundler. Documented in `STACK.md` and `INTEGRATIONS.md` as the most likely reason a fresh clone appears broken. |
+
+## Verified from a genuinely fresh clone
+
+Not inferred from the working tree. `git clone --depth 1` of the pushed commit
+`eb54aa5`, into an empty directory, on Windows 11 / Node 22.22.2:
+
+| Step | Result |
+|---|---|
+| `npm install` (root) | 76 packages, 21s, exit 0 |
+| `npm test` | 14 passed |
+| `npm run docs:check` | 22 markdown files, all tour steps resolve |
+| `cd render && npm install` | 11 packages, 2s, exit 0 |
+| `cd render && npm test` | 11 passed, 0 failed |
+| `cd render && npm run verify:demo` | exit 0, `{"denseLive":124402,...,"initialDecay":0,...,"replayDecay":0,"browserErrors":0}` |
+| `npm run example:compose` | serves; page renders `model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal ...)`, **0 console errors** |
 
 ## How to reproduce this report
 
