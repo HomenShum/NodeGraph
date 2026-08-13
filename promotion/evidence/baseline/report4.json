@@ -1,0 +1,20 @@
+{
+  "zero": {
+    "at": [
+      523,
+      259
+    ],
+    "readout": "entity measured empty cohort · condition count 0 visits 1 — interaction frequency, not evidence strength",
+    "shot": "18-zero-readout.png"
+  },
+  "unknown": {
+    "at": [
+      759,
+      475
+    ],
+    "readout": "entity unmeasured cohort · condition count unknown — not measured visits 1 — interaction frequency, not evidence strength",
+    "shot": "18-unknown-readout.png"
+  },
+  "dragStatsBefore": "0 entities · 0 edges",
+  "dragHit": null
+}

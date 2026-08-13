@@ -1,0 +1,242 @@
+{
+  "contrast": [
+    {
+      "tag": "H1",
+      "id": null,
+      "text": "NodeGraph Live — scenario gallery",
+      "color": "rgb(223, 229, 234)",
+      "fontSize": 22,
+      "large": true,
+      "ratio": 15.23,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "tag": "P",
+      "id": null,
+      "text": "Ten scenarios, one trust grammar: evidence edges",
+      "color": "rgb(139, 148, 157)",
+      "fontSize": 13,
+      "large": false,
+      "ratio": 6.28,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Unknown vs zero",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Evidence lands",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Deep traversal",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Hub burst",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Dense constellation",
+      "color": "rgb(232, 241, 250)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 12.73,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Assertion chain",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Rapid fire",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Bounded memory",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Drag playground",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "Calm by contract",
+      "color": "rgb(200, 210, 218)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 11.5,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "H3",
+      "id": null,
+      "text": "Relationship graph",
+      "color": "rgb(226, 230, 233)",
+      "fontSize": 14,
+      "large": false,
+      "ratio": 14.44,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "P",
+      "id": null,
+      "text": "139 entities · 142 of 142 relationships shown",
+      "color": "rgb(154, 164, 173)",
+      "fontSize": 12,
+      "large": false,
+      "ratio": 7.15,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "BUTTON",
+      "id": null,
+      "text": "fit",
+      "color": "rgb(154, 164, 173)",
+      "fontSize": 11,
+      "large": false,
+      "ratio": 7.15,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "LABEL",
+      "id": null,
+      "text": "evidence\n(142)",
+      "color": "rgb(226, 230, 233)",
+      "fontSize": 12,
+      "large": false,
+      "ratio": 14.44,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "SPAN",
+      "id": null,
+      "text": "evidence",
+      "color": "rgb(226, 230, 233)",
+      "fontSize": 12,
+      "large": false,
+      "ratio": 14.44,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "SPAN",
+      "id": null,
+      "text": "(142)",
+      "color": "rgb(154, 164, 173)",
+      "fontSize": 12,
+      "large": false,
+      "ratio": 7.15,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "P",
+      "id": "caption",
+      "text": "Twelve clusters, ~140 entities, seven kinds of n",
+      "color": "rgb(127, 137, 146)",
+      "fontSize": 12.5,
+      "large": false,
+      "ratio": 5.43,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "tag": "P",
+      "id": "stats",
+      "text": "139 entities · 142 edges",
+      "color": "rgb(85, 96, 106)",
+      "fontSize": 12,
+      "large": false,
+      "ratio": 3.01,
+      "min": 4.5,
+      "pass": false
+    }
+  ],
+  "basics": {
+    "h1Count": 1,
+    "lang": "en",
+    "title": "NodeGraph Live — scenario gallery",
+    "landmarks": 2,
+    "canvasNoLabel": 8,
+    "canvasTotal": 8,
+    "imagesMissingAlt": 0,
+    "graphTabbable": false,
+    "liveRegions": 0,
+    "metaViewport": "width=device-width, initial-scale=1"
+  },
+  "perf": {
+    "domContentLoadedMs": 522,
+    "loadMs": 523,
+    "firstContentfulPaintMs": 656,
+    "resources": 42
+  }
+}

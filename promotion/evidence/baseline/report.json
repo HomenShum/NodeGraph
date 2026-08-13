@@ -1,0 +1,416 @@
+{
+  "base": "http://127.0.0.1:4173",
+  "startedAt": "2026-08-13T09:08:48.808Z",
+  "steps": [
+    {
+      "step": "desktop-default",
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1265,
+        "bodyScrollWidth": 1265,
+        "overflowPx": 0,
+        "stats": "89 entities · 88 edges",
+        "caption": "Twelve clusters, ~140 entities, seven kinds of node — hue is a categorical channel for KIND, never a value. Watch the fi",
+        "active": "Dense constellation",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1233,
+          "h": 712,
+          "right": 1249
+        },
+        "focusables": 12
+      },
+      "litMidIngestion": 129273,
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\01-desktop-default.png"
+    },
+    {
+      "step": "desktop-after-decay",
+      "litAfterDecay": 0,
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1265,
+        "bodyScrollWidth": 1265,
+        "overflowPx": 0,
+        "stats": "142 entities · 145 edges",
+        "caption": "Twelve clusters, ~140 entities, seven kinds of node — hue is a categorical channel for KIND, never a value. Watch the fi",
+        "active": "Dense constellation",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1233,
+          "h": 712,
+          "right": 1249
+        },
+        "focusables": 12
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\02-desktop-decay.png"
+    },
+    {
+      "step": "assertion-chain",
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "overflowPx": 0,
+        "stats": "5 entities · 4 edges",
+        "caption": "Curated claims join the measured field: violet assertion edges, each carrying a full replay receipt (source, release, bo",
+        "active": "Assertion chain",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1240,
+          "h": 622,
+          "right": 1260
+        },
+        "focusables": 12
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\03-assertion-chain.png"
+    },
+    {
+      "step": "after-node-click",
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "overflowPx": 0,
+        "stats": "6 entities · 5 edges",
+        "caption": "Curated claims join the measured field: violet assertion edges, each carrying a full replay receipt (source, release, bo",
+        "active": "Assertion chain",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1240,
+          "h": 622,
+          "right": 1260
+        },
+        "focusables": 13
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\04-selection.png"
+    },
+    {
+      "step": "keyboard-enter",
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "overflowPx": 0,
+        "stats": "3 entities · 2 edges",
+        "caption": "Curated claims join the measured field: violet assertion edges, each carrying a full replay receipt (source, release, bo",
+        "active": "Assertion chain",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1240,
+          "h": 622,
+          "right": 1260
+        },
+        "focusables": 12
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\06-keyboard-enter.png"
+    },
+    {
+      "step": "mobile-390",
+      "probe": {
+        "innerWidth": 390,
+        "docScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "overflowPx": 0,
+        "stats": "122 entities · 122 edges",
+        "caption": "Twelve clusters, ~140 entities, seven kinds of node — hue is a categorical channel for KIND, never a value. Watch the fi",
+        "active": "Dense constellation",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 358,
+          "h": 732,
+          "right": 374
+        },
+        "focusables": 12
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\07-mobile-390.png"
+    },
+    {
+      "step": "reduced-motion",
+      "probe": {
+        "innerWidth": 1280,
+        "docScrollWidth": 1265,
+        "bodyScrollWidth": 1265,
+        "overflowPx": 0,
+        "stats": "65 entities · 63 edges",
+        "caption": "Twelve clusters, ~140 entities, seven kinds of node — hue is a categorical channel for KIND, never a value. Watch the fi",
+        "active": "Dense constellation",
+        "buttons": [
+          "Unknown vs zero",
+          "Evidence lands",
+          "Deep traversal",
+          "Hub burst",
+          "Dense constellation",
+          "Assertion chain",
+          "Rapid fire",
+          "Bounded memory",
+          "Drag playground",
+          "Calm by contract"
+        ],
+        "mounted": true,
+        "sigmaCanvases": 8,
+        "selection": null,
+        "addBranch": false,
+        "addBranchText": false,
+        "stageRect": {
+          "w": 1233,
+          "h": 712,
+          "right": 1249
+        },
+        "focusables": 12
+      },
+      "shot": "C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\promotion\\NodeGraph\\promotion\\evidence\\baseline\\08-reduced-motion.png"
+    }
+  ],
+  "mountedDesktop": true,
+  "nodePoint": {
+    "x": 641,
+    "y": 402,
+    "w": 1204,
+    "h": 370
+  },
+  "keyboard": [
+    {
+      "tag": "BUTTON",
+      "text": "Unknown vs zero",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Evidence lands",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Deep traversal",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Hub burst",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Dense constellation",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Assertion chain",
+      "outline": "auto 1px rgb(16, 16, 16)",
+      "matchesFocusVisible": true
+    }
+  ],
+  "keyboardActivation": {
+    "beforeEnter": "Assertion chain",
+    "afterEnter": "Assertion chain",
+    "changed": false
+  },
+  "overflow": [
+    {
+      "width": 1440,
+      "innerWidth": 1440,
+      "docScrollWidth": 1440,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 1240,
+        "h": 622,
+        "right": 1340
+      },
+      "stats": "4 entities · 3 edges"
+    },
+    {
+      "width": 1280,
+      "innerWidth": 1280,
+      "docScrollWidth": 1280,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 1240,
+        "h": 622,
+        "right": 1260
+      },
+      "stats": "5 entities · 4 edges"
+    },
+    {
+      "width": 1024,
+      "innerWidth": 1024,
+      "docScrollWidth": 1024,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 992,
+        "h": 622,
+        "right": 1008
+      },
+      "stats": "6 entities · 5 edges"
+    },
+    {
+      "width": 768,
+      "innerWidth": 768,
+      "docScrollWidth": 753,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 721,
+        "h": 622,
+        "right": 737
+      },
+      "stats": "6 entities · 5 edges"
+    },
+    {
+      "width": 414,
+      "innerWidth": 414,
+      "docScrollWidth": 414,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 382,
+        "h": 622,
+        "right": 398
+      },
+      "stats": "6 entities · 5 edges"
+    },
+    {
+      "width": 390,
+      "innerWidth": 390,
+      "docScrollWidth": 390,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 358,
+        "h": 622,
+        "right": 374
+      },
+      "stats": "6 entities · 5 edges"
+    },
+    {
+      "width": 360,
+      "innerWidth": 360,
+      "docScrollWidth": 360,
+      "overflowPx": 0,
+      "stageRect": {
+        "w": 328,
+        "h": 622,
+        "right": 344
+      },
+      "stats": "6 entities · 5 edges"
+    }
+  ],
+  "reducedMotionLit": 0,
+  "consoleErrors": [],
+  "failedRequests": [
+    {
+      "error": "net::ERR_ABORTED",
+      "type": "Document",
+      "canceled": true
+    }
+  ],
+  "badStatuses": [
+    {
+      "url": "http://127.0.0.1:4173/favicon.ico",
+      "status": 404
+    }
+  ],
+  "requestCount": 127,
+  "thirdPartyHosts": [
+    "127.0.0.1:4173",
+    "esm.sh"
+  ]
+}

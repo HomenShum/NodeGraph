@@ -1,0 +1,35 @@
+{
+  "timeline": [
+    {
+      "atMs": 1000,
+      "stats": "24 entities · 16 edges"
+    },
+    {
+      "atMs": 2000,
+      "stats": "30 entities · 30 edges"
+    },
+    {
+      "atMs": 3000,
+      "stats": "30 entities · 30 edges"
+    },
+    {
+      "atMs": 4000,
+      "stats": "30 entities · 30 edges"
+    },
+    {
+      "atMs": 6000,
+      "stats": "30 entities · 30 edges"
+    }
+  ],
+  "settled": "30 entities · 30 edges",
+  "shotBefore": "19-drag-before.png",
+  "hit": {
+    "x": 420,
+    "y": 560,
+    "sel": "entity pathway 1 · pathway count unknown — not measured visits 2 — interaction frequency, not evidence strength"
+  },
+  "afterStats": "30 entities · 30 edges",
+  "shotAfter": "20-drag-after.png",
+  "atDrop": null,
+  "atOrigin": null
+}

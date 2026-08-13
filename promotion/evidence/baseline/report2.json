@@ -1,0 +1,28 @@
+{
+  "steps": [
+    {
+      "click": [
+        660,
+        424
+      ],
+      "selection": "entity vemurafenib · intervention count 412 visits 3 — interaction frequency, not evidence strength assertions BRAF V600E · Reactome v97 · receipt"
+    }
+  ],
+  "selectionShot": "09-selection-readout.png",
+  "fit": {
+    "present": true,
+    "shot": "10-after-fit.png"
+  },
+  "filterBefore": "fit evidence (1) assertion (4) · curated",
+  "filterAfter": "fit evidence (1) assertion (4) · curated",
+  "filterHeader": "Relationship graph |  | 6 entities · 1 of 5 relationships shown",
+  "filterShot": "11-filter-assertion-off.png",
+  "keyboardActivation": {
+    "focusedText": "Rapid fire",
+    "activeBefore": "Dense constellation",
+    "activeAfter": "Rapid fire",
+    "changed": true
+  },
+  "keyboardShot": "12-keyboard-enter-activated.png",
+  "statsAfterKeyboard": "16 entities · 8 edges"
+}

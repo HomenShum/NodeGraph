@@ -1,0 +1,32 @@
+{
+  "compose": {
+    "url": "http://127.0.0.1:4456/examples/compose/",
+    "mounted": true,
+    "stats": "model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal — no count was measured, no release-stamped receipt exists)",
+    "header": "Relationship graph |  | 46 entities · 94 of 94 relationships shown | ",
+    "overflowPx": 0,
+    "errors": [],
+    "shot": "13-compose.png"
+  },
+  "composeBad": [
+    "404 http://127.0.0.1:4456/favicon.ico"
+  ],
+  "unknownVsZero": {
+    "stats": "2 entities · 0 edges",
+    "caption": "The two loneliest states, distinguished on purpose: a cohort nobody measured says “unknown — not measured”; a cohort measured at 0 says so. A renderer that confuses them invents a fact.",
+    "shot": "14-unknown-vs-zero.png"
+  },
+  "unknownVsZeroReadouts": [],
+  "drag": {
+    "dragged": null,
+    "before": {
+      "stats": "30 entities · 30 edges",
+      "shot": "16-drag-before.png"
+    },
+    "after": {
+      "stats": "30 entities · 30 edges",
+      "shot": "17-drag-after.png"
+    }
+  },
+  "errorsAll": []
+}
