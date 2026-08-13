@@ -229,8 +229,17 @@ function Demo() {
     () => session.getSnapshot(),
     () => session.getSnapshot(),
   );
-  const stats = document.querySelector("#stats");
-  if (stats) stats.textContent = `${snapshot.nodes.length} entities · ${snapshot.edges.length} edges`;
+  // Read the counters off session.stats(), not off the snapshot, because
+  // stats() is the only thing that also discloses the LIMITS. A bounded store
+  // that evicts silently is indistinguishable from data loss to a reader.
+  const s = session.stats();
+  const el = document.querySelector("#stats");
+  if (el) {
+    const full = s.nodes >= s.maxNodes || s.edges >= s.maxEdges;
+    el.textContent =
+      `${s.nodes} entities · ${s.edges} edges · bounded at ${s.maxNodes}/${s.maxEdges}` +
+      (full ? " — at capacity, oldest-inserted evicted first" : "");
+  }
   return React.createElement(NodeGraph, {
     nodes: snapshot.nodes,
     edges: snapshot.edges,

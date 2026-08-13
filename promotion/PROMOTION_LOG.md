@@ -78,11 +78,17 @@ happily grade a stranger's demo without saying so.
 Open defects, most-impactful first. A defect is only listed once it has a
 reproduction; a hunch is not a defect.
 
+A **fixed** row describes a tree that no longer exists, so it cites files
+without line numbers: the line that held the defect has since moved, and a
+pointer nobody can check is worse than no pointer. Live pointers are written
+as a backticked symbol followed by a backticked `path:line`, and
+`npm run docs:check` asserts the cited line contains that symbol.
+
 | # | Severity | Journey | Reproduction | Status |
 |---|----------|---------|--------------|--------|
-| D1 | major | J1 | Fresh clone → `cd render && npm install && npm run verify:demo` → **exit 1**, `demo proof failed: {…"liveButton":false…}`. `render/scripts/probe-demo.mjs:35` asserts the demo HTML contains the string `Add another live branch`; that string exists nowhere under `render/demo/`. The gate's second half would fail too: `render/scripts/browser-demo-gate.mjs:178` clicks `#add-branch`, and `grep -rn "add-branch" demo/ src/` returns nothing. The repo's own rendered-demo gate is stale relative to the ten-scenario gallery that replaced the single-branch demo. | **fixed, wave 3** — `verify:demo` exits 0 on 6/6 consecutive runs; see `docs/SIMPLIFICATION_REPORT.md`. |
-| D2 | major | J1 | `render/README.md:23` ("then press **Add another live branch**") and `:218` tell a first-time reader to press a control that does not exist. Rendered at 1280x900, the page offers ten scenario chips and no such button; `document.body.innerText.includes('Add another live branch')` is `false` in all seven captured states (`report.json` → every step's `addBranchText`). The first instruction a stranger follows after the app starts is wrong. | **fixed, wave 3** — both passages now describe the ten scenario chips that exist. |
-| D3 | major | J2 | Press **Assertion chain** at 1280x900. The caption under the stage reads "violet assertion edges, each carrying a full replay receipt" (`render/demo/demo.js:146`) and `render/README.md:63` says "A violet `assertion` edge". Nothing violet is drawn: `render/src/graph-model.ts:89` sets `assertion: { dark: "#727b83" }` against `traversal: { dark: "#616a72" }` and `evidence: { dark: "#a8b1b9" }` — two near-identical greys about 1.3:1 apart. See `09-selection-readout.png`: the only thing separating a curated claim from interaction history in the drawing is the small `v97` label. The repo's binding rule is that these three classes never look alike, and the docs describe a colour channel the renderer does not implement. | **fixed, iteration 1** — measured at 6.70 CIEDE2000 dark / 9.44 light, now 22.37 / 26.47. `promotion/evidence/edge-grammar/` |
+| D1 | major | J1 | Fresh clone → `cd render && npm install && npm run verify:demo` → **exit 1**, `demo proof failed: {…"liveButton":false…}`. `render/scripts/probe-demo.mjs` asserts the demo HTML contains the string `Add another live branch`; that string exists nowhere under `render/demo/`. The gate's second half would fail too: `render/scripts/browser-demo-gate.mjs` clicks `#add-branch`, and `grep -rn "add-branch" demo/ src/` returns nothing. The repo's own rendered-demo gate is stale relative to the ten-scenario gallery that replaced the single-branch demo. | **fixed, wave 3** — `verify:demo` exits 0 on 6/6 consecutive runs; see `docs/SIMPLIFICATION_REPORT.md`. |
+| D2 | major | J1 | `render/README.md` told a first-time reader twice ("then press **Add another live branch**") to press a control that does not exist. Rendered at 1280x900, the page offers ten scenario chips and no such button; `document.body.innerText.includes('Add another live branch')` is `false` in all seven captured states (`report.json` → every step's `addBranchText`). The first instruction a stranger follows after the app starts is wrong. | **fixed, wave 3** — both passages now describe the ten scenario chips that exist. |
+| D3 | major | J2 | Press **Assertion chain** at 1280x900. The caption under the stage reads "violet assertion edges, each carrying a full replay receipt" (`render/demo/demo.js`) and `render/README.md` said "A violet `assertion` edge". Nothing violet is drawn: `render/src/graph-model.ts` set `assertion: { dark: "#727b83" }` against `traversal: { dark: "#616a72" }` and `evidence: { dark: "#a8b1b9" }` — two near-identical greys about 1.3:1 apart. See `09-selection-readout.png`: the only thing separating a curated claim from interaction history in the drawing is the small `v97` label. The repo's binding rule is that these three classes never look alike, and the docs describe a colour channel the renderer does not implement. | **fixed, iteration 1** — measured at 6.70 CIEDE2000 dark / 9.44 light, now 22.37 / 26.47. `promotion/evidence/edge-grammar/` |
 | D4 | major | J4 | The root README presents `examples/compose` as the proof that the two layers are one product, with a screenshot. There is no command to run it: no script in either `package.json`, no mention in "Development" or "Example App", and `examples/compose/compose.js` imports `../../dist/semanticGraph.js` and `../../render/dist/index.js`, so it also silently requires both layers to be built. It renders correctly once served — "model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal …)", 0 console errors (`13-compose.png`) — but only from a static server written by hand for this capture. | **fixed, wave 3** — `npm run example:compose` builds both layers and serves it; re-proved in headless Chromium, 0 console errors, `promotion/evidence/wave3/`. |
 | D5 | major | J1 | At 390x844 (`07-mobile-390.png`) the page itself is fine — chips wrap, 0 px horizontal overflow — but the graph is only shrunk, never fitted: the camera keeps its desktop framing, so "intervention h…" and "biomarker hub…" are clipped at the canvas edge and roughly half the constellation sits outside the visible stage. `render/demo/index.html` also pins `#root { min-height: 620px }`, so the canvas stays taller than most of a phone screen. A `fit` control exists but the reader has to know to press it. | open |
 | D6 | minor | J1 | The live counter under the stage ("142 entities · 145 edges", `#stats`) is `rgb(85,96,106)` on `#0b0e12` — measured 3.01:1, below the 4.5:1 AA minimum for body text (`report6.json` → `contrast`). It is the one text element on the page that fails; the other 19 measured pass. | open |
@@ -103,7 +109,7 @@ reproduction; a hunch is not a defect.
   (`edge-grammar.json` verdict FAIL, exit 1; `assertion-chain-dark.png` shows
   four grey edges under a caption promising violet ones).
 
-- **Root cause** — `render/src/graph-model.ts:79-90`, and it was written down
+- **Root cause** — `render/src/graph-model.ts`, and it was written down
   in the comment above the palette: hue was reserved entirely for node kind,
   width entirely for evidence magnitude, which left **one** channel —
   lightness — to carry a **three**-way categorical distinction against a single
@@ -197,3 +203,67 @@ the same walks are clickable in [`.tours/`](../.tours).
   typechecks 0, `npm run build` 0, `npm run docs:check` 0,
   `npm run proof:edge-grammar` PASS 6/6 pairs, `cd render && npm run
   verify:demo` **exit 0 on six consecutive runs** (was exit 1 at baseline).
+
+---
+
+## Wave 3b — 2026-08-13 — what a second cold reader found
+
+An independent engineer was handed only this repository, ran it, and traced the
+nine steps of `docs/START_HERE.md`. They got through it — and reported three
+things the repo was telling itself that were not true.
+
+- **Root `npm test` reads like the whole suite and is half of it.** 14 vitest
+  cases, exit 0, and not one line of `render/src/session.ts`,
+  `render/src/graph-model.ts`, `render/src/NodeGraph.tsx` or
+  `render/mcp/server.mjs` executes — the running product, and five of the nine
+  steps. `docs/codebase/TESTING.md` even said "there is no single `test` command
+  covering both packages", which documents the trap instead of removing it.
+  **Fixed:** root `npm run test:all` = `vitest run && npm --prefix render test
+  && npm run docs:check`. Measured just now: **14 + 11 passed, docs 0, exit 0**.
+
+- **The doc-pointer guard proved anchor stability, never anchor correctness.**
+  `scripts/check-docs.mjs` only asked whether the cited line number was inside
+  the file, so a twenty-line drift in a six-hundred-line file passed silently,
+  and its citation regex skipped any path without a `/` — which is why the
+  bare `graph-model.ts` pointers in `START_HERE.md` were never checked at all. **Fixed:**
+  every `.tours` step now carries CodeTour's own `pattern` and must *first*-match
+  at the cited line (so the check and the tour open the same line), and every
+  markdown citation is written as a backticked symbol before a backticked
+  `path:line`, with the guard asserting the line contains that symbol. Coverage
+  went from "34 tour steps exist" to **34 tour steps and 38 citations, each
+  matched against the line's content**.
+
+  Proved by breaking it on purpose: moved tour step 5 twenty lines down its file, and pointed the
+  `requireEdgeType` citation at the `requireAssertionReceipt` line — right
+  file, wrong symbol. **Old guard: `docs
+  ok`, exit 0. New guard: exit 1, naming both.** Restored, exit 0. It then caught
+  four more real drifts introduced by this wave's own edits before they shipped.
+
+- **`session.stats()` had no caller on any user surface.** It is the only thing
+  that reports the *limits* beside the sizes, and it was reachable only from
+  tests: a store that evicts without saying so is indistinguishable from data
+  loss, to a reader and to an agent. **Fixed:** the readout under the stage now
+  reads it. Measured in headless Chrome on the rendered page: dense scenario
+  `142 entities · 145 edges · bounded at 400/900`; **Bounded memory** scenario
+  `60 entities · 50 edges · bounded at 60/140 — at capacity, oldest-inserted
+  evicted first` (`evidence/wave3b/bounded-memory-readout.png`, 0 console
+  errors). `browser-demo-gate.mjs` now asserts `boundsDisclosed`; reverting the
+  readout to the snapshot-only version fails it (`"boundsDisclosed":false`).
+
+  Note this lands on the one element D6 flags at 3.01:1 contrast, so D6 now
+  hides a bigger claim than a counter. It stays open.
+
+- **Found while verifying the above, and fixed:** the near-miss recorded at
+  baseline was still live. Port 4173 was held by an 11-hour-old
+  `serve-demo.mjs` from another session; both gates spawned their own server,
+  waited for *the port* to answer, and would have graded the stranger. They now
+  wait for **their own child's listening line** and exit non-zero naming the
+  port, and both honour `NODEGRAPH_DEMO_PORT` (which `serve-demo.mjs` already
+  read). Proved against the real squatter: `node scripts/probe-demo.mjs` and
+  `scripts/browser-demo-gate.mjs` on 4173 both **throw**; on 4608 the full
+  `verify:demo` returns
+  `{"boundsDisclosed":true,"denseLive":123471,"initialLive":9630,"expandedLive":6885,"initialDecay":0,"replayLive":6872,"replayDecay":0,"browserErrors":0}`.
+
+- **Tests:** `npm run test:all` exit 0 (14 vitest + 11 node:test + docs 34
+  steps/38 citations), root and render `npm run typecheck` exit 0,
+  `NODEGRAPH_DEMO_PORT=4608 npm run verify:demo` exit 0.

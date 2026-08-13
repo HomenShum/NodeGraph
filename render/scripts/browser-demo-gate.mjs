@@ -71,18 +71,33 @@ class Cdp {
   }
 }
 
+// The same knob serve-demo.mjs reads; see probe-demo.mjs for why it matters.
+const demoPort = Number(process.env.NODEGRAPH_DEMO_PORT ?? 4173);
+const demoUrl = `http://127.0.0.1:${demoPort}`;
+
 const server = spawn(process.execPath, ["scripts/serve-demo.mjs"], {
   cwd: root,
   stdio: ["ignore", "pipe", "pipe"],
   windowsHide: true,
 });
+// Wait for OUR server to announce itself, not for the port to answer; see
+// probe-demo.mjs. A held port kills the child and Chrome would then be driven
+// against the stranger holding it.
+const listening = new Promise((resolveReady, rejectReady) => {
+  server.stdout.once("data", resolveReady);
+  server.once("exit", (code) =>
+    rejectReady(new Error(`demo server exited (${code}) — port ${demoPort} is held by another process`)),
+  );
+  setTimeout(() => rejectReady(new Error("demo server never announced itself")), 10_000).unref();
+});
 const profile = mkdtempSync(resolve(tmpdir(), "nodegraph-live-"));
 let chromeProcess;
 
 try {
+  await listening;
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
-      const response = await fetch("http://127.0.0.1:4173", {
+      const response = await fetch(demoUrl, {
         signal: AbortSignal.timeout(1_000),
       });
       if (response.ok) break;
@@ -103,7 +118,7 @@ try {
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-gpu-sandbox",
-        "http://127.0.0.1:4173",
+        demoUrl,
       ],
       { stdio: ["ignore", "ignore", "pipe"], windowsHide: true },
     );
@@ -124,7 +139,7 @@ try {
     const targets = await fetch(`http://127.0.0.1:${port}/json/list`, {
       signal: AbortSignal.timeout(1_000),
     }).then((response) => response.json());
-    target = targets.find((item) => item.type === "page" && item.url.includes("127.0.0.1:4173"));
+    target = targets.find((item) => item.type === "page" && item.url.includes(`127.0.0.1:${demoPort}`));
     if (target) break;
     await wait(100);
   }
@@ -187,6 +202,12 @@ try {
     if (attempt === 59) throw new Error("dense constellation never reached 30 entities");
     await wait(100);
   }
+  // session.stats() is the only thing that also discloses the LIMITS, and a
+  // bounded store that evicts without saying so is indistinguishable from data
+  // loss. This fails the moment the readout stops naming the cap.
+  const boundsDisclosed = /bounded at \d+\/\d+/.test(
+    await evaluate("document.querySelector('#stats')?.textContent ?? ''"),
+  );
   // Take the BRIGHTEST of several samples. Every ingestion re-runs the overlay
   // effect, and re-running it resizes (therefore clears) the canvas one frame
   // before the next paint — so a single sample during a fast stream reads 0
@@ -243,6 +264,7 @@ try {
       (event.method === "Runtime.consoleAPICalled" && event.params?.type === "error"),
   );
   const proof = {
+    boundsDisclosed,
     denseLive: denseLive.lit,
     initialLive: initialLive.lit,
     expandedLive: expandedLive.lit,
@@ -252,6 +274,7 @@ try {
     browserErrors: browserErrors.length,
   };
   if (
+    !proof.boundsDisclosed ||
     proof.denseLive <= 0 ||
     proof.initialLive <= 0 ||
     proof.expandedLive <= 0 ||

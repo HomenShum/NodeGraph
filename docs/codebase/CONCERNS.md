@@ -56,10 +56,11 @@ against this surface. No input-latency or frame measurement was taken during the
 ## Structural concerns, no reproduction needed
 
 **Two packages, two test runners, two tsconfig styles.** vitest at the root,
-`node --test` in `render/`. There is no single command that runs everything, and
-a newcomer will run one and think they are green. Converging them is a real
-system change (the root's tests are `.ts` and need transpilation), so it was left
-alone — but it is the biggest tax on a cold reader here.
+`node --test` in `render/`. `npm run test:all` now runs both plus
+`docs:check`, so a newcomer has one green light instead of half of one — but the
+two runners themselves remain, and root `npm test` still passes without
+executing a line of `render/`. Converging the runners is a real system change
+(the root's tests are `.ts` and need transpilation), so it stays open.
 
 **`src/semanticGraph.ts` is 1071 lines.** It is well sectioned — one `derive*`
 function per source of relationships — and jscpd finds no duplication in it, so

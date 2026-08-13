@@ -3,11 +3,15 @@
 ## Every command, and what it costs
 
 ```sh
+# both layers at once (repo root) — start here
+npm run test:all         # 14 vitest + 11 node:test + docs:check, ~15s, offline
+
 # model layer (repo root)
 npm test                 # vitest, 14 tests, ~1s, offline
 npm run typecheck        # tsc --noEmit over src, tests, examples/showcase
 npm run build            # tsc, then loads dist/index.js through Node's resolver
-npm run docs:check       # every tour step and doc line-citation resolves
+npm run docs:check       # 34 tour steps and 38 doc citations, each against the
+                         # line's CONTENT, not just its number
 npm run example:build    # vite production build of the showcase
 
 # view layer
@@ -21,8 +25,15 @@ node mcp/client-demo.mjs # ~1s: real JSON-RPC session against the MCP server
 npm run proof:edge-grammar
 ```
 
-There is no single `test` command covering both packages. That is a real cost of
-the two-package layout; run both.
+`npm test` at the root runs the **model** layer only — 14 cases that never touch
+`session.ts`, `graph-model.ts`, `NodeGraph.tsx` or the MCP server, which is where
+the running product lives. It goes green while the view layer is untested, so it
+reads like a whole suite and is not one. **`npm run test:all` is the command that
+covers both**; it exits non-zero if either layer or the doc-pointer guard fails.
+
+The browser gates take a port: `NODEGRAPH_DEMO_PORT=4608 npm run verify:demo`.
+Use it when 4173 might already be held — a gate that finds the port taken grades
+whatever is listening, which has already happened here once.
 
 ## What each suite actually protects
 

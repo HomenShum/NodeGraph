@@ -130,13 +130,17 @@ New here? Read **[docs/START_HERE.md](docs/START_HERE.md)** first — it walks o
 real user action through the code in the order it executes, and
 [`.tours/`](.tours) is the same walk as clickable CodeTours.
 
-Each layer has its own commands, because each is its own package:
+Each layer has its own commands, because each is its own package — and one
+command covers both:
 
 ```bash
+# both layers (repo root, after installing in both)
+npm run test:all  # 14 vitest + 11 node:test + the doc-pointer guard
+
 # model layer (repo root)
 npm install
 npm run typecheck
-npm test          # vitest, 14 tests
+npm test          # vitest, 14 tests — MODEL layer only, no view-layer code
 npm run build
 
 # view layer
@@ -146,6 +150,9 @@ npm run typecheck
 npm test          # node:test, 11 tests
 npm run verify:demo   # serves the demo, drives it in headless Chrome
 ```
+
+Root `npm test` covers the model layer alone. It goes green without executing a
+line of `render/`, so use `npm run test:all` before believing a suite is green.
 
 ## Example App
 

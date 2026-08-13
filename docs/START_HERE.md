@@ -87,7 +87,8 @@ or 404.
 ## Step 2 — The primary user action: pressing a scenario chip
 
 **File:** `render/demo/demo.js`
-**Symbol:** the click handler built in the `SCENARIOS.map` loop (line 251)
+**Symbol:** the click handler built in the `SCENARIOS.map`
+(`render/demo/demo.js:260`) loop
 **Called by:** the reader clicking one of the ten chips above the stage
 **Calls next:** `scenario.run()`, which calls `GraphSession.observe` /
 `GraphSession.assertEdge` on timers
@@ -124,8 +125,9 @@ deduplication memory.
 ## Step 3 — Validation and the domain types: where input becomes trusted
 
 **File:** `render/src/session.ts` and `render/src/graph-model.ts`
-**Symbol:** `GraphSession.observe` (session.ts:253), `requireEdgeType`
-(graph-model.ts:49), `requireAssertionReceipt` (graph-model.ts:159)
+**Symbol:** `observe` (`render/src/session.ts:253`), `requireEdgeType`
+(`render/src/graph-model.ts:49`), `requireAssertionReceipt`
+(`render/src/graph-model.ts:159`)
 **Called by:** the scenario's `run()`, the MCP server, any host application
 **Calls next:** `GraphSession.upsertNode` / `upsertEdge`
 
@@ -164,7 +166,7 @@ mutates nothing. `requireEdgeType` refuses a fourth epistemic category outright.
 ## Step 4 — Agent orchestration: an agent doing the same thing over MCP
 
 **File:** `render/mcp/server.mjs`
-**Symbol:** the `createInterface(...).on("line", ...)` JSON-RPC loop (line 102)
+**Symbol:** the `createInterface` (`render/mcp/server.mjs:102`) JSON-RPC loop
 **Called by:** any MCP-speaking agent over stdio
 **Calls next:** `call(name, args)` → the same `GraphSession`
 
@@ -208,7 +210,8 @@ refused: `MCP SESSION COMPLETE — boundary held`.
 ## Step 5 — Tool registration and invocation
 
 **File:** `render/mcp/server.mjs`
-**Symbol:** `TOOLS` (line 32) and `call` (line 82)
+**Symbol:** `TOOLS` (`render/mcp/server.mjs:32`) and `call`
+(`render/mcp/server.mjs:82`)
 **Called by:** the JSON-RPC loop, on `tools/list` and `tools/call`
 **Calls next:** `session.observe` / `session.assertEdge`
 
@@ -243,7 +246,7 @@ and returned as `isError`. Note the ordering: `session.observe` runs *before*
 
 ### Step 5b — the same shape in the model layer
 
-`src/nodeAgentBridge.ts:92` `createNodeGraphAgentTools` builds five read-only
+`createNodeGraphAgentTools` (`src/nodeAgentBridge.ts:92`) builds five read-only
 tools (`nodegraph_overview`, `nodegraph_search`,
 `nodegraph_select_neighborhood`, `nodegraph_evidence_summary`,
 `nodegraph_open_questions`) over a built semantic graph, with zod schemas. They
@@ -255,8 +258,9 @@ an agent.
 ## Step 6 — Persistence and artifact mutation
 
 **File:** `render/src/session.ts`
-**Symbol:** `upsertNode` (line 179), `upsertEdge` (line 207), `trimNodes`
-(line 168), `evictOldestNode` (line 159)
+**Symbol:** `upsertNode` (`render/src/session.ts:179`), `upsertEdge`
+(`render/src/session.ts:207`), `trimNodes` (`render/src/session.ts:168`),
+`evictOldestNode` (`render/src/session.ts:159`)
 **Called by:** `observe`, `assertEdge`, `ingest`
 **Calls next:** `emit()` → every subscriber
 
@@ -297,19 +301,22 @@ never silently become "unbounded".
 If a host needs the graph to survive a reload, that is the model layer's
 `nodegraph.document` v1 contract: `exportNodeGraphDocument`
 (`src/graphContract.ts:104`) writes one with a deterministic revision and source
-provenance, `parseNodeGraphDocument` (:125) validates one coming back,
-`diffNodeGraphDocuments` (:172) reports exactly which nodes, relationships and
-clusters changed, and `InMemoryNodeGraphAdapter.importDocument`
-(`src/inMemoryAdapter.ts:39`) or `buildNeo4jSyncPlan` applies it.
+provenance, `parseNodeGraphDocument` (`src/graphContract.ts:125`) validates one
+coming back, `diffNodeGraphDocuments` (`src/graphContract.ts:172`) reports
+exactly which nodes, relationships and clusters changed, and
+`importDocument` (`src/inMemoryAdapter.ts:39`) on
+`InMemoryNodeGraphAdapter`, or `buildNeo4jSyncPlan`, applies it.
 
 ---
 
 ## Step 7 — Streaming and rendering: how progress reaches the interface
 
 **File:** `render/src/NodeGraph.tsx`
-**Symbol:** the patch effect (line 128) and the cinematic overlay effect (line 392)
+**Symbol:** the patch `useEffect` (`render/src/NodeGraph.tsx:128`) and the
+cinematic overlay `useEffect` (`render/src/NodeGraph.tsx:392`)
 **Called by:** React, when the session snapshot changes
-**Calls next:** `patchGraph` (`graph-model.ts:392`), then Sigma repaints itself
+**Calls next:** `patchGraph` (`render/src/graph-model.ts:392`), then Sigma
+repaints itself
 
 **Why this exists**
 One graph per mount. Growth is *patched* into the live Graphology graph rather
@@ -350,9 +357,10 @@ Step 8.
 
 **The three rules this step must never break**, all enforced in
 `graph-model.ts`: only `evidence` weights get the edge **width** channel
-(`edgeDisplayAttrs`, line 264); the three classes get three distinct inks *and*
-three distinct luminances so a reader with no colour vision keeps the grammar
-(`EDGE_COLOR`, line 114); `visits` is carried as an attribute and rendered as
+— `edgeDisplayAttrs` (`render/src/graph-model.ts:264`); the three classes get
+three distinct inks *and* three distinct luminances so a reader with no colour
+vision keeps the grammar — `EDGE_COLOR`
+(`render/src/graph-model.ts:114`); `visits` is carried as an attribute and rendered as
 text, never as size, colour or opacity.
 
 ---
@@ -360,8 +368,8 @@ text, never as size, colour or opacity.
 ## Step 8 — Failure and recovery
 
 **File:** `render/src/session.ts`
-**Symbol:** `remember` (line 136), and the validate-before-mutate prologue of
-`ingest` (line 320)
+**Symbol:** `remember` (`render/src/session.ts:136`), and the
+validate-before-mutate prologue of `ingest` (`render/src/session.ts:320`)
 **Called by:** every public session method
 **Calls next:** nothing — it either returns false (duplicate) or throws
 
@@ -402,20 +410,23 @@ surface in the UI. See `docs/codebase/CONCERNS.md`.
 
 ## Step 9 — The tests that prove this flow
 
-Run them: `cd render && npm test` (11 tests, Node's built-in runner) and
-`npm test` at the repo root (14 tests, vitest).
+Run them all with one command at the repo root: **`npm run test:all`** — 14
+vitest cases (model layer) + 11 Node-runner cases (view layer) + the doc-pointer
+guard, exit 0. Run separately they are `npm test` at the root and
+`cd render && npm test`; note that the root command alone executes no view-layer
+code at all, so it can be green while everything below Step 3 is untested.
 
 | The step above | The test that proves it |
 |---|---|
-| 3 — validation, the three classes, unknown vs measured zero | `render/tests/trust-boundary.test.mjs:19` "happy path: an analyst can distinguish unknown, measured zero, evidence, and a receipted assertion" |
-| 3 — refusal before mutation | `render/tests/trust-boundary.test.mjs:66` "adversarial path: unknown edge types and incomplete assertion receipts fail before mutation" |
-| 8 — idempotency and the reused-id conflict | `render/tests/trust-boundary.test.mjs:112` "recovery path: exact retries are idempotent and an event id cannot hide changed content" |
-| 6 — bounded memory and deterministic eviction | `render/tests/sustained-session.test.mjs:21` and `:70` (eviction reaching the render surface), `:95` (invalid capacity fails at construction) |
-| 7 — the three inks stay distinguishable, in both themes and after a patch | `render/tests/edge-grammar.test.mjs:136` (CIEDE2000 self-check against Sharma's published pairs) and `:174` |
-| 7 — streamed births are never collinear | `render/tests/seed-geometry.test.mjs:5` |
-| 6b — document round-trip, provenance, pins | `tests/semanticGraph.test.ts:310` |
-| 6b — incremental sync with stale pruning | `tests/semanticGraph.test.ts:326` |
-| 5b — the model layer's agent tools | `tests/nodeAgentBridge.test.ts:74` |
+| 3 — validation, the three classes, unknown vs measured zero | `happy path: an analyst can distinguish unknown, measured zero, evidence, and a receipted assertion` (`render/tests/trust-boundary.test.mjs:19`) |
+| 3 — refusal before mutation | `adversarial path: unknown edge types and incomplete assertion receipts fail before mutation` (`render/tests/trust-boundary.test.mjs:66`) |
+| 8 — idempotency and the reused-id conflict | `recovery path: exact retries are idempotent and an event id cannot hide changed content` (`render/tests/trust-boundary.test.mjs:112`) |
+| 6 — bounded memory and deterministic eviction | `sustained path: a day-long stream stays bounded and evicts deterministically` (`render/tests/sustained-session.test.mjs:21`), `sustained render path` (`render/tests/sustained-session.test.mjs:70`) for eviction reaching the render surface, `degraded path: invalid capacity` (`render/tests/sustained-session.test.mjs:95`) |
+| 7 — the three inks stay distinguishable, in both themes and after a patch | `CIEDE2000 self-check against Sharma's published reference pairs` (`render/tests/edge-grammar.test.mjs:136`) and `the trust grammar survives a patch` (`render/tests/edge-grammar.test.mjs:174`) |
+| 7 — streamed births are never collinear | `a streamed chain of births is never collinear` (`render/tests/seed-geometry.test.mjs:5`) |
+| 6b — document round-trip, provenance, pins | `round-trips a versioned graph document with provenance and persistent pins` (`tests/semanticGraph.test.ts:310`) |
+| 6b — incremental sync with stale pruning | `applies incremental in-memory and Neo4j synchronization with optional stale pruning` (`tests/semanticGraph.test.ts:326`) |
+| 5b — the model layer's agent tools | `creates NodeAgent-compatible tools for overview, search, evidence, selection, and open questions` (`tests/nodeAgentBridge.test.ts:74`) |
 
 And the two checks that drive a real browser:
 
@@ -434,11 +445,13 @@ npm run proof:edge-grammar           # re-reads the edge ink out of the rendered
 - **A new scenario in the demo** — one object in the `SCENARIOS` array in
   `render/demo/demo.js`. Nothing else.
 - **A new node kind** — nothing to register. `kindHue`
-  (`graph-model.ts:73`) hashes the kind name into the palette deterministically.
+  (`render/src/graph-model.ts:73`) hashes the kind name into the palette
+  deterministically.
 - **A new agent tool** — one entry in `TOOLS` and one `if` in `call`
   (`render/mcp/server.mjs`), routed through the same `GraphSession`.
 - **A new derivation in the model layer** — a `derive*` function in
-  `src/semanticGraph.ts`, called from `buildSemanticGraph` (line 1022) beside
+  `src/semanticGraph.ts`, called from `buildSemanticGraph`
+  (`src/semanticGraph.ts:1022`) beside
   `deriveSheet` / `deriveTraces` / `deriveProposals`.
 
 ## Next

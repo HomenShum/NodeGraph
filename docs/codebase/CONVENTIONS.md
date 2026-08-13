@@ -105,7 +105,30 @@ and failed every fresh clone for weeks.
 ## Scripts
 
 Anything a reader is told to run is an npm script in the package that owns it.
-Cross-package commands live at the root and use `npm --prefix render run ...`.
-Verification scripts **spawn and kill their own server on their own port**, so a
-run cannot silently grade an orphaned process from an earlier session. That has
-happened here.
+Cross-package commands live at the root and use `npm --prefix render ...` —
+`test:all` is the one that covers both layers, and root `npm test` alone
+executes no view-layer code.
+
+Verification scripts **spawn their own server and wait for that server's own
+"listening" line**, never for the port to merely answer. A held port kills the
+child while the port keeps replying, so waiting on the port grades whoever is
+listening: this repo once graded an 11-hour-old orphan from an earlier session
+and called it a pass. Both gates now exit non-zero naming the port instead.
+`NODEGRAPH_DEMO_PORT` moves them off 4173 when it is occupied.
+
+## Doc pointers carry what they expect to find
+
+A citation is written as a backticked symbol followed by a backticked
+`path:line`, never a line number alone:
+
+```
+`requireEdgeType` (`render/src/graph-model.ts:49`)
+```
+
+`npm run docs:check` asserts the cited line *contains that symbol*, and every
+`.tours/*.tour` step carries CodeTour's own `pattern`, which must first-match at
+the step's line. A range check alone proves the anchor is stable, not correct —
+it passes while a citation points at a neighbouring function, and it passed here
+on a deliberate twenty-line drift before this rule existed. Historical notes
+(a fixed defect in `promotion/PROMOTION_LOG.md`) cite files without lines,
+because the line described a tree that no longer exists.

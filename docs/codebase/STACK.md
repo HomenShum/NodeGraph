@@ -56,6 +56,6 @@ handful of lines here or a platform feature:
 - Sigma **reserves the `type` attribute** on node and edge display data to name
   the rendering program. An edge carrying `type: "evidence"` makes the renderer
   look for a program by that name and throw before anything paints. So the
-  semantic kind is stored under `edgeType` in the graph
-  (`render/src/graph-model.ts:234`) while the payload field callers write stays
+  semantic kind is stored under `edgeType` in the graph — `EDGE_TYPE_ATTR`
+  (`render/src/graph-model.ts:234`) — while the payload field callers write stays
   `type`.
