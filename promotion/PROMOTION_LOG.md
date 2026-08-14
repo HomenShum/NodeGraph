@@ -303,17 +303,28 @@ things the repo was telling itself that were not true.
   axe-core 2 violations — `color-contrast` (serious) on the counter under the
   stage, `heading-order` (moderate) on the component's own `h3`; Lighthouse
   mobile accessibility 0.88, best-practices 0.96, SEO 0.90, one browser console
-  error (a 404 favicon), mobile CLS 0.083 with 0.119 of it from the scenario
-  chips arriving after esm.sh answered; the graph unreachable by keyboard; no
-  error state anywhere; and the graph clipped at 390px.
+  error (a 404 favicon), mobile CLS 0.083 and TBT 5083ms; the graph unreachable
+  by keyboard; no error state anywhere; and the graph clipped at 390px.
 
 - **Fixed, and why each fix is where it is:**
 
   - **The stage grew with the node count.** `height: Math.min(height, 260 + n * 22)`
     sizes the stage from data — on a surface whose premise is that nodes stream
-    in, that is a box that resizes under the reader on every batch, and it was
-    also re-firing the ResizeObserver 50 times a load. Deleted; the prop is now
-    honoured flat. Mobile CLS 0.201 → **0.0008**, TBT 5083ms → 802ms.
+    in, that is a box that resizes under the reader on every batch. Deleted; the
+    prop is now honoured flat.
+
+    **Careful with the numbers here, because it is easy to pair two that do not
+    belong together.** This fix, the chips fix and the header fix all attack
+    layout shift, and they are not separable in the final report. What was
+    measured: Lighthouse mobile CLS **0.083 before this iteration, 0.0004
+    after**, and mobile TBT **5083ms before, 802ms after** — but across all of
+    this iteration's changes, not this bullet alone. Separately, an in-repo
+    `PerformanceObserver` harness at 412x823 under 4x CPU throttle attributed
+    **0.119** of a 0.2015 total to the chips arriving late and **0.083** to the
+    header wrapping, and read **0.0008** once all three were fixed. Those
+    attribution numbers come from an intermediate tree, not the pristine one, so
+    they explain WHERE the shift came from and must not be quoted as a
+    before/after pair with the Lighthouse figures.
   - **The chips were markup that JS was building.** They now live in
     `render/demo/index.html` and `demo.js` refuses to bind if the two lists have
     drifted. A crawler and a reader both see the eleven scenarios before any
@@ -339,10 +350,19 @@ things the repo was telling itself that were not true.
 - **Re-proved, after the change, in the rendered app:**
   axe-core **0 violations** (29 rules passing); Lighthouse accessibility,
   best-practices and SEO **1.00 on both form factors**, desktop performance
-  **1.00**; mobile CLS 0.0004, desktop CLS 0.0002; **0 console errors, 0 non-2xx
-  HTTP requests**; WIG review **20 of 23 pass, 0 major, 2 minor**; interaction
-  latency worst **30ms unthrottled / 104ms at 4x throttle** with **zero long
-  tasks in a 3s idle window** after the field settles; J5 driven end to end.
+  **0.99**, mobile 0.79; mobile CLS 0.0004, desktop CLS 0.0002; **0 console
+  errors, 0 non-2xx HTTP requests**; WIG review **20 of 23 pass, 0 major, 2
+  minor**; interaction latency worst **17ms unthrottled / 118ms at 4x throttle**
+  with **zero long tasks in a 3s idle window** after the field settles; J5
+  driven end to end.
+
+  Every number in that sentence is read out of the committed
+  `promotion/evidence/web-quality/web-quality.json` and `wig/wig-review.json`,
+  not from an earlier run. Lighthouse performance is the one that moves: five
+  consecutive runs of this same tree scored mobile between 0.68 and 0.85 and
+  desktop between 0.80 and 1.00 depending on what else the machine was doing.
+  The accessibility, best-practices and SEO scores and the axe result did not
+  move at all.
 
 - **Tests:** root `npm test` 14 passed, render `npm test` 11 passed,
   `npm run docs:check` ok (34 tour steps, 39 citations — it caught nine anchors
@@ -372,4 +392,4 @@ things the repo was telling itself that were not true.
   respawned once per ingestion batch — about 48 blob workers per load of the
   dense scenario. It is not a leak (each is terminated) and not a failed
   request, but it is most of what mobile TBT is made of, and it is the obvious
-  next place to look if mobile performance is ever worth more than 0.81.
+  next place to look if mobile performance is ever worth chasing above 0.8.

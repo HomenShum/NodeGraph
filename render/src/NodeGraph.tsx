@@ -727,9 +727,10 @@ export function NodeGraph({
       {/* Stacked, not a baseline-aligned row. The count line grows as the
           stream lands — "0 entities · 0 of 0 relationships shown" fits beside
           the title, "142 entities · 145 of 145 relationships shown" wraps
-          under it — and that wrap moved everything below by 20px mid-ingestion
-          (measured: 0.083 of this page's mobile CLS). Two lines, always, is
-          the same height at every width. */}
+          under it — and that wrap moved everything below by 20px mid-ingestion.
+          A PerformanceObserver at 412x823 under 4x CPU throttle attributed
+          0.083 of a 0.2015 cumulative layout shift to that one wrap. Two
+          lines, always, is the same height at every width. */}
       <header style={{ marginBottom: 8 }}>
         {/* h2, not h3: this section sits directly under the host page's h1, and
             a jump from h1 to h3 is a broken outline for anyone navigating by
@@ -838,8 +839,8 @@ export function NodeGraph({
           // `height`, flat. It used to be `Math.min(height, 260 + n * 22)`,
           // which sizes the stage from the node COUNT — and on a surface whose
           // whole premise is that nodes stream in, that is a box that grows
-          // under the reader on every batch. Lighthouse attributed 0.083 of
-          // the mobile CLS to exactly this element. A caller who passes a
+          // under the reader on every batch. Lighthouse's layout-shifts audit
+          // named this element specifically, at 0.083. A caller who passes a
           // height meant it.
           height,
           // The px height is a content decision; the viewport still gets the

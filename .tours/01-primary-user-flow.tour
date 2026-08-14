@@ -5,7 +5,7 @@
   "steps": [
     {
       "file": "render/demo/index.html",
-      "line": 111,
+      "line": 112,
       "pattern": "src=\"/demo/demo\\.js\"",
       "title": "The entry point is a plain HTML page",
       "description": "No framework, no router, no bundler. React, Sigma and Graphology arrive through the import map above; this module script is the whole entry. That is the claim the demo exists to prove, and the cost is that first load needs network."
@@ -89,7 +89,7 @@
     },
     {
       "file": "render/src/NodeGraph.tsx",
-      "line": 958,
+      "line": 959,
       "pattern": "data-testid=\"count-readout\"",
       "title": "The readout that closes the loop",
       "description": "Click a node and this is what a reader gets: the count, spelled 'unknown - not measured' when absent, and `visits` labelled in words as interaction frequency, not evidence strength. The receipt chips below carry source, release and a literal URL that replays the claim."

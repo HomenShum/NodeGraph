@@ -2,7 +2,7 @@
   "condition": 8,
   "surface": "render/demo/index.html — the demo gallery the reduced gate judges this package on",
   "url": "http://127.0.0.1:4907/",
-  "measuredAt": "2026-08-14T03:18:48.447Z",
+  "measuredAt": "2026-08-14T03:47:28.198Z",
   "tools": {
     "lighthouse": "lighthouse@13.4.1",
     "axe": "@axe-core/cli@4.13.0"
@@ -27,20 +27,30 @@
       "version": "13.4.1",
       "formFactor": "mobile",
       "scores": {
-        "performance": 0.81,
+        "performance": 0.79,
         "accessibility": 1,
         "best-practices": 1,
         "seo": 1,
         "agentic-browsing": 1
       },
       "webVitals": {
-        "lcpMs": 1058.66325,
+        "lcpMs": 1660.1365999999998,
         "cls": 0.0003983343368706381,
-        "fcpMs": 907.219375,
-        "tbtMs": 802,
-        "ttiMs": 6408.823500000001
+        "fcpMs": 1207.6024499999999,
+        "tbtMs": 872,
+        "ttiMs": 6491.0347
       },
       "failingAudits": [
+        {
+          "id": "first-contentful-paint",
+          "score": 0.99,
+          "title": "First Contentful Paint"
+        },
+        {
+          "id": "largest-contentful-paint",
+          "score": 0.99,
+          "title": "Largest Contentful Paint"
+        },
         {
           "id": "speed-index",
           "score": 0.97,
@@ -48,17 +58,17 @@
         },
         {
           "id": "total-blocking-time",
-          "score": 0.36,
+          "score": 0.33,
           "title": "Total Blocking Time"
         },
         {
           "id": "max-potential-fid",
-          "score": 0.19,
+          "score": 0.3,
           "title": "Max Potential First Input Delay"
         },
         {
           "id": "interactive",
-          "score": 0.6,
+          "score": 0.59,
           "title": "Time to Interactive"
         },
         {
@@ -73,7 +83,7 @@
         },
         {
           "id": "unminified-javascript",
-          "score": 0.5,
+          "score": 0,
           "title": "Minify JavaScript"
         },
         {
@@ -119,24 +129,44 @@
       "version": "13.4.1",
       "formFactor": "desktop",
       "scores": {
-        "performance": 1,
+        "performance": 0.99,
         "accessibility": 1,
         "best-practices": 1,
         "seo": 1,
         "agentic-browsing": 1
       },
       "webVitals": {
-        "lcpMs": 406.2676,
-        "cls": 0.00022574519121000737,
-        "fcpMs": 304.7007,
-        "tbtMs": 5,
-        "ttiMs": 1264.4827
+        "lcpMs": 405.23900000000003,
+        "cls": 0.0002281546226432832,
+        "fcpMs": 303.92925,
+        "tbtMs": 50,
+        "ttiMs": 2986.02275
       },
       "failingAudits": [
         {
           "id": "speed-index",
-          "score": 0.98,
+          "score": 0.89,
           "title": "Speed Index"
+        },
+        {
+          "id": "max-potential-fid",
+          "score": 0.99,
+          "title": "Max Potential First Input Delay"
+        },
+        {
+          "id": "interactive",
+          "score": 0.8,
+          "title": "Time to Interactive"
+        },
+        {
+          "id": "mainthread-work-breakdown",
+          "score": 0,
+          "title": "Minimize main-thread work"
+        },
+        {
+          "id": "bootup-time",
+          "score": 0.5,
+          "title": "Reduce JavaScript execution time"
         },
         {
           "id": "unminified-javascript",
@@ -176,8 +206,8 @@
       ],
       "consoleErrors": [],
       "network": {
-        "requests": 89,
-        "blobWorkerUrls": 47,
+        "requests": 168,
+        "blobWorkerUrls": 126,
         "nonOk": []
       },
       "report": "lighthouse-desktop.json"
@@ -192,28 +222,30 @@
     },
     "keyToReadoutMs": {
       "throttled4x": [
-        104,
-        64,
-        57,
-        50,
-        51
+        118,
+        77,
+        67,
+        70,
+        62
       ],
       "unthrottled": [
-        17,
-        7,
-        13,
-        30,
+        16,
+        15,
+        14,
+        14,
         17
       ]
     },
     "worstKeyToReadoutMs": {
-      "throttled4x": 104,
-      "unthrottled": 30
+      "throttled4x": 118,
+      "unthrottled": 17
     },
     "longTasks": {
-      "duringLoadAndStream": 67,
+      "duringLoadAndStream": 84,
       "idleAfterSettle": [],
-      "duringFiveSelections": []
+      "duringFiveSelections": [
+        56
+      ]
     },
     "stillAtMsThrottled4x": 9000,
     "bar": "worst unthrottled key-to-readout <= 200ms (INP good), and zero long tasks in a 3s idle window",

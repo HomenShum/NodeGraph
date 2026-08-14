@@ -81,8 +81,9 @@
       <!-- The chips are MARKUP, not something demo.js appends after the module
            graph finishes downloading React and Sigma from esm.sh. Built in JS
            they arrived ~800 ms after first paint and pushed the stage down
-           130 px at 412 px wide — measured as 0.119 of this page's 0.20 mobile
-           CLS. As markup they are the right size at every width from the first
+           130 px at 412 px wide — 0.119 of a 0.2015 cumulative layout shift,
+           attributed by a PerformanceObserver at 412x823 under 4x CPU throttle
+           on the tree of 2026-08-13. As markup they are the right size at every width from the first
            frame, and a reader (or a crawler) sees the eleven scenarios before any
            script runs. demo.js checks this list against its own and refuses to
            start if they have drifted, so there is no silent second source. -->

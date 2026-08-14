@@ -48,7 +48,8 @@ Two things this audit reports but does not resolve:
   `interaction` block exists: worst key-to-readout latency unthrottled, worst
   throttled, and how long the field takes to go still.
 - **Lighthouse numbers vary run to run** on a loaded machine — mobile
-  performance moved between 0.68 and 0.76 across consecutive runs of an
-  identical tree. Read the committed report as one honest sample, not a
+  performance moved between 0.68 and 0.85, and desktop between 0.80 and 1.00,
+  across consecutive runs of an identical tree. The accessibility,
+  best-practices and SEO scores and the axe result did not move at all. Read the committed report as one honest sample, not a
   constant, and re-run before treating a change of a few points as a
   regression.
