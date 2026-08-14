@@ -11,7 +11,11 @@
       h1 { font-size: 20px; margin: 0 0 4px; }
       p { margin: 0 0 10px; color: #8b949d; font-size: 13px; line-height: 1.5; max-width: 980px; }
       #stage { border: 1px solid #1d242c; border-radius: 12px; overflow: hidden; background: #0e1319; }
-      #log { color: #55606a; font-size: 12px; margin-top: 8px; white-space: pre-wrap; }
+      /* Was #55606a: 3.01:1 on this ground, the same defect the gallery's
+         counter carried (D6), on the line that reports how many events
+         survived the boundary. #8b949d is 6.29:1. */
+      #log { color: #8b949d; font-size: 12px; margin-top: 8px; white-space: pre-wrap;
+             font-variant-numeric: tabular-nums; }
     </style>
     <script type="importmap">
       {

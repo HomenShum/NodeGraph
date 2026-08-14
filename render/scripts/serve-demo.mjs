@@ -29,7 +29,16 @@ const contentTypes = {
 
 createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-  const relative = pathname === "/" ? "demo/index.html" : pathname.slice(1);
+  // A trailing slash means a directory, and a directory means its index.html —
+  // without this, `/mcp/viewer/`, the URL PRODUCT_JOURNEYS J5 and the MCP
+  // README both tell the reader to open, resolves to a directory, fails the
+  // isFile check and 404s. That is why J5's browser half was never driven.
+  const relative =
+    pathname === "/"
+      ? "demo/index.html"
+      : pathname.endsWith("/")
+        ? `${pathname.slice(1)}index.html`
+        : pathname.slice(1);
   const target = resolve(root, relative);
   if (target !== root && !target.startsWith(`${root}${sep}`)) {
     response.writeHead(403).end("forbidden");

@@ -51,6 +51,8 @@ export type NodeClickMessage = {
   nodeKind: string;
   /** Absent means no measurement; zero is a real measured value. */
   count?: number;
+  /** Interaction frequency at the moment of the click. Never evidence. */
+  visits: number;
   edges: {
     other: string;
     weight: number;
@@ -72,6 +74,13 @@ export type NodeGraphProps = {
   edges: GraphEdge[];
   /** Interaction frequency per node id. Text only. Never a visual channel. */
   visits?: Record<string, number>;
+  /**
+   * Something upstream refused a batch. Rendered as the error state, in words,
+   * where the reader is already looking. The library's contract is that a
+   * malformed batch is rejected WHOLE rather than half-drawn, and a refusal a
+   * reader never sees is indistinguishable from a batch that never arrived.
+   */
+  error?: string | null;
   dark?: boolean;
   height?: number;
   /** Override the ring hue per node kind. */
@@ -87,12 +96,21 @@ export type NodeGraphProps = {
  */
 const settleMs = (order: number) => Math.min(1000 + order * 2, 6000);
 const syncIterations = (order: number) => (order > 1200 ? 120 : 300);
-const labelThreshold = (order: number) => (order <= 150 ? 0 : 8);
+/**
+ * Which nodes get a label. The stage WIDTH is an argument because a hundred
+ * labels that read as a dense field on a 1200px stage are an unreadable smear
+ * on a 320px one — and a label clipped mid-word at the frame is worse than no
+ * label. Below 520px only the hubs are named; that is the difference between
+ * a mobile view that was designed and one that was merely shrunk.
+ */
+const labelThreshold = (order: number, stageWidth: number) =>
+  stageWidth < 520 ? 12 : order <= 150 ? 0 : 8;
 
 export function NodeGraph({
   nodes,
   edges,
   visits,
+  error = null,
   dark = false,
   height = 480,
   kindColors,
@@ -117,6 +135,22 @@ export function NodeGraph({
   const cineCanvas = useRef<HTMLCanvasElement>(null);
   const handlers = useRef({ onNode, onContext });
   handlers.current = { onNode, onContext };
+  // Has the reader aimed the camera themselves? A refit is help while the
+  // framing is still ours and vandalism once it is theirs, so every automatic
+  // `animatedReset` below is gated on this. Set by pointer, never by our own
+  // resets — a camera "updated" listener would latch on the reset it caused.
+  const cameraTouched = useRef(false);
+  // Keyboard cursor over the node list. Filled by the Sigma effect, called by
+  // the stage's own keydown handler; a ref because re-subscribing the renderer
+  // on every parent render drops gestures mid-flight (same reason as
+  // `handlers`).
+  const keyboardStep = useRef<((delta: number) => void) | null>(null);
+  // Frame the whole field, and label as many nodes as the width can carry.
+  // Both are owned by the Sigma effect (it holds the renderer and the
+  // container), and called from the patch effect, the resize observer and the
+  // fit button — one implementation, four callers, no drift.
+  const refit = useRef<(() => void) | null>(null);
+  const applyLabelThreshold = useRef<(() => void) | null>(null);
 
   // ONE graph per mount (per theme); growth is patched in below.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- initial build only
@@ -125,8 +159,21 @@ export function NodeGraph({
     [dark],
   );
   const [rev, setRev] = useState(0);
+  // A batch this renderer itself refuses. `patchGraph` validates and throws
+  // before it mutates, which is the contract — but thrown from a render effect
+  // with no boundary above it, that took the whole tree down and left the
+  // reader a blank page. Caught here, the refusal becomes the error STATE
+  // instead of the end of the session.
+  const [refused, setRefused] = useState<string | null>(null);
   useEffect(() => {
-    const patch = patchGraph(graph, nodes, edges, { dark, visits, kindColors });
+    let patch;
+    try {
+      patch = patchGraph(graph, nodes, edges, { dark, visits, kindColors });
+      setRefused(null);
+    } catch (cause) {
+      setRefused(cause instanceof Error ? cause.message : String(cause));
+      return;
+    }
     const added = patch.added;
     for (const id of patch.removedNodeIds) births.current.nodes.delete(id);
     for (const key of patch.removedEdgeKeys) births.current.edges.delete(key);
@@ -142,13 +189,21 @@ export function NodeGraph({
       // from the circle. Reduced motion: place-and-stop, no drift.
       layoutRef.current?.start();
       if (settleTimer.current) clearTimeout(settleTimer.current);
-      settleTimer.current = setTimeout(
-        () => layoutRef.current?.stop(),
-        Math.min(600 + added * 40, 2000),
-      );
+      settleTimer.current = setTimeout(() => {
+        layoutRef.current?.stop();
+        // Refit after EVERY settle, not only the first. The mount-time reset
+        // frames whatever had arrived by ~1.3s; a stream that keeps growing
+        // then grows straight out of frame, which is invisible on a 1440px
+        // stage and clips half the constellation on a 390px one (defect D5).
+        if (!cameraTouched.current) refit.current?.();
+      }, Math.min(600 + added * 40, 2000));
     }
     if (patch.added > 0 || patch.removed > 0) setRev((r) => r + 1);
-    sigmaRef.current?.setSetting("labelRenderedSizeThreshold", labelThreshold(graph.order));
+    // A readout that outlives its entity is a claim about something the graph
+    // no longer holds. Eviction and scenario changes both remove nodes, so the
+    // selection is dropped rather than left asserting a stale count.
+    setSelected((current) => (current && !graph.hasNode(current.id) ? null : current));
+    applyLabelThreshold.current?.();
     sigmaRef.current?.refresh();
   }, [graph, nodes, edges, dark, visits, kindColors]);
   const types = useMemo(() => edgeTypesPresent(graph), [graph, rev]);
@@ -222,8 +277,9 @@ export function NodeGraph({
 
     const renderer = new Sigma(graph, el, {
       renderLabels: true,
-      // At a few thousand nodes every label is noise and a per-frame cost.
-      labelRenderedSizeThreshold: labelThreshold(graph.order),
+      // At a few thousand nodes every label is noise and a per-frame cost —
+      // and on a narrow stage, so is a hundred and forty of them.
+      labelRenderedSizeThreshold: labelThreshold(graph.order, el.clientWidth),
       labelFont: "ui-sans-serif, system-ui, sans-serif",
       labelSize: 13,
       labelWeight: "600",
@@ -260,6 +316,25 @@ export function NodeGraph({
         return { ...data, zIndex: 1 };
       },
     });
+    // Frame the whole field. `animatedReset` fits the NODES; labels are drawn
+    // beside their node and their width does not shrink with the stage, so on
+    // a narrow screen an exact fit clips the words. Widen the frame instead of
+    // cropping them — measured at 390px, where the label canvas went from 37
+    // pixels of ink jammed against the frame to none.
+    // setState, not animatedReset then a nudge: `animatedReset` schedules its
+    // write, so reading `camera.ratio` straight afterwards reads the OLD ratio
+    // and the nudge is then overwritten by the animation landing. This is the
+    // same default state (0.5, 0.5, angle 0, ratio 1) written once.
+    refit.current = () =>
+      renderer.getCamera().setState({
+        x: 0.5,
+        y: 0.5,
+        angle: 0,
+        ratio: el.clientWidth < 520 ? 1.3 : 1,
+      });
+    applyLabelThreshold.current = () =>
+      renderer.setSetting("labelRenderedSizeThreshold", labelThreshold(graph.order, el.clientWidth));
+
     renderer.on("enterNode", ({ node }) => {
       hoverRef.current = node;
       renderer.refresh();
@@ -279,6 +354,12 @@ export function NodeGraph({
         label: a.label as string,
         nodeKind: a.kind as string,
         ...(typeof a.count === "number" ? { count: a.count } : {}),
+        // Carried in the message, not looked up from the live graph when the
+        // panel renders. The readout describes the entity AS CLICKED; reading
+        // through to a graph that has since evicted or replaced that node threw
+        // `NotFoundGraphError` out of render and took the whole tree down —
+        // observed when a scenario was switched with a node still selected.
+        visits: (a.visits as number) ?? 0,
         edges: graph
           .edges(id)
           .filter((e) => !hiddenRef.current.hiddenEdges.has(e))
@@ -312,6 +393,46 @@ export function NodeGraph({
       handlers.current.onContext?.(msg);
     });
     renderer.on("clickStage", () => setSelected(null));
+
+    // KEYBOARD. The selection readout is where this product discloses the
+    // whole trust grammar — "count 0" vs "unknown — not measured", and the
+    // receipt behind an assertion — and until now it opened on `clickNode`
+    // only, so a keyboard-only reader could reach every scenario chip and
+    // never reach the thing the chips are for (defect D7). Arrow keys walk
+    // the same node list Sigma draws and call the SAME `emitNode` the mouse
+    // calls, so there is one selection path with two inputs, not two paths.
+    let cursor: string | null = null;
+    keyboardStep.current = (delta: number) => {
+      const visible = graph.filterNodes((n) => !hiddenRef.current.hiddenNodes.has(n));
+      if (visible.length === 0) return;
+      if (cursor && graph.hasNode(cursor)) graph.removeNodeAttribute(cursor, "highlighted");
+      const at = cursor ? visible.indexOf(cursor) : -1;
+      // delta 0 means "clear": Escape leaves the graph with nothing selected.
+      if (delta === 0) {
+        cursor = null;
+        setSelected(null);
+        renderer.refresh();
+        return;
+      }
+      const next = at < 0 ? (delta > 0 ? 0 : visible.length - 1)
+        : (at + delta + visible.length) % visible.length;
+      cursor = visible[next];
+      // Sigma's own highlight ring, so the reader can SEE which entity the
+      // readout describes. No camera move: the refit above keeps the whole
+      // field framed, and panning per keystroke would be motion nobody asked
+      // for on a surface whose contract is that the steady state is still.
+      graph.setNodeAttribute(cursor, "highlighted", true);
+      renderer.refresh();
+      emitNode(cursor);
+    };
+
+    // Pointer aim is an opinion about framing; automatic refits stop once the
+    // reader has one. Passive: neither listener calls preventDefault.
+    const claimCamera = () => {
+      cameraTouched.current = true;
+    };
+    el.addEventListener("pointerdown", claimCamera, { passive: true });
+    el.addEventListener("wheel", claimCamera, { passive: true });
 
     // DRAG. A held node follows the pointer; the layout pauses so physics
     // does not fight the hand, and it stays paused after release — a reader
@@ -359,18 +480,30 @@ export function NodeGraph({
         // graph away from where the seed circle sat, and a drag during the
         // settle leaves the camera wherever it was dropped.
         // duration 0: a cut, not a glide.
-        renderer.getCamera().animatedReset({ duration: 0 });
+        refit.current?.();
       }, settleMs(graph.order));
     }
 
     // Sigma caches its container size; without this the canvas draws at the
     // old size and hit-tests against the new one, and clicks land on nothing.
-    const ro = new ResizeObserver(() => renderer.refresh());
+    const ro = new ResizeObserver(() => {
+      // A stage that got narrower keeps its old framing and its old label
+      // budget otherwise, which is how the same graph reads as "designed" at
+      // 1440 and "shrunk" at 390.
+      applyLabelThreshold.current?.();
+      if (!cameraTouched.current) refit.current?.();
+      renderer.refresh();
+    });
     ro.observe(el);
 
     return () => {
       if (timer) clearTimeout(timer);
       layoutRef.current = null;
+      keyboardStep.current = null;
+      refit.current = null;
+      applyLabelThreshold.current = null;
+      el.removeEventListener("pointerdown", claimCamera);
+      el.removeEventListener("wheel", claimCamera);
       layout?.kill();
       ro.disconnect();
       renderer.kill();
@@ -591,17 +724,17 @@ export function NodeGraph({
         fontFamily: "ui-sans-serif, system-ui, sans-serif",
       }}
     >
-      <header
-        style={{
-          marginBottom: 8,
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "baseline",
-          columnGap: 12,
-          rowGap: 4,
-        }}
-      >
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Relationship graph</h3>
+      {/* Stacked, not a baseline-aligned row. The count line grows as the
+          stream lands — "0 entities · 0 of 0 relationships shown" fits beside
+          the title, "142 entities · 145 of 145 relationships shown" wraps
+          under it — and that wrap moved everything below by 20px mid-ingestion
+          (measured: 0.083 of this page's mobile CLS). Two lines, always, is
+          the same height at every width. */}
+      <header style={{ marginBottom: 8 }}>
+        {/* h2, not h3: this section sits directly under the host page's h1, and
+            a jump from h1 to h3 is a broken outline for anyone navigating by
+            heading (axe: heading-order). */}
+        <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Relationship graph</h2>
         <p style={{ margin: 0, fontSize: 12, color: muted }}>
           {graph.order.toLocaleString()} entities · {visibleEdges.toLocaleString()} of{" "}
           {graph.size.toLocaleString()} relationships shown
@@ -624,15 +757,23 @@ export function NodeGraph({
         <button
           type="button"
           data-testid="nodegraph-fit"
-          onClick={() => sigmaRef.current?.getCamera().animatedReset({ duration: 0 })}
+          onClick={() => {
+            // Pressing fit hands the framing back to us, so automatic refits
+            // resume; otherwise one stray pan would disable them for the rest
+            // of the session and this button would be the only way home.
+            cameraTouched.current = false;
+            refit.current?.();
+          }}
           style={{
             border: `1px solid ${border}`,
             borderRadius: 6,
             background: "transparent",
             color: muted,
-            padding: "2px 8px",
+            padding: "2px 10px",
+            minHeight: 24,
             fontSize: 11,
             cursor: "pointer",
+            touchAction: "manipulation",
           }}
         >
           fit
@@ -640,7 +781,18 @@ export function NodeGraph({
         {types.map((t) => (
           <label
             key={t}
-            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+            // 24px tall, because the checkbox itself renders at 13px and the
+            // label is its hit target. "Match visual & hit targets" —
+            // measured, this row was 16px before.
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              minHeight: 24,
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
           >
             <input
               type="checkbox"
@@ -683,7 +835,17 @@ export function NodeGraph({
           position: "relative",
           borderRadius: 6,
           border: `1px solid ${border}`,
-          height: Math.min(height, 260 + nodes.length * 22),
+          // `height`, flat. It used to be `Math.min(height, 260 + n * 22)`,
+          // which sizes the stage from the node COUNT — and on a surface whose
+          // whole premise is that nodes stream in, that is a box that grows
+          // under the reader on every batch. Lighthouse attributed 0.083 of
+          // the mobile CLS to exactly this element. A caller who passes a
+          // height meant it.
+          height,
+          // The px height is a content decision; the viewport still gets the
+          // last word. A 620px stage is two thirds of a 844px phone, and CSS
+          // can clamp that without a resize listener.
+          maxHeight: "70vh",
           width: "100%",
           // A faint static dot grid: honest decoration — a static pattern
           // encodes nothing, so no rule about channels or motion is spent on
@@ -694,9 +856,29 @@ export function NodeGraph({
           backgroundSize: "22px 22px",
         }}
       >
+        {/* The stage is a focus stop with a name and a stated key map. Sigma
+            draws into canvases, which carry no semantics of their own, so the
+            accessible name lives on the container that owns them.
+            role="application" is deliberate and narrow: it tells a screen
+            reader to hand arrow keys to this widget instead of using them for
+            its own browse cursor, which is the only way the cursor below can
+            work at all. */}
         <div
           ref={containerRef}
           data-testid="nodegraph-canvas"
+          role="application"
+          tabIndex={0}
+          aria-label="Relationship graph. Arrow keys move between entities and open the selected entity's readout below. Escape clears the selection."
+          onKeyDown={(e) => {
+            const step =
+              e.key === "ArrowRight" || e.key === "ArrowDown" ? 1
+              : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1
+              : e.key === "Escape" ? 0
+              : null;
+            if (step === null) return;
+            e.preventDefault();
+            keyboardStep.current?.(step);
+          }}
           style={{ position: "absolute", inset: 0 }}
         />
         {/* The cinematic streaming layer. Canvas2D over WebGL, as a SIBLING of
@@ -717,11 +899,49 @@ export function NodeGraph({
         />
       </div>
 
+      {/* One region, always mounted, polite. Two reasons it is not conditional:
+          a live region inserted at the moment it changes is routinely missed by
+          screen readers, and an unselected graph is a designed state here, not
+          an absence — the reader is told what to do next rather than shown
+          nothing (gate condition 5, and "no dead ends"). */}
+      <div
+        data-testid="nodegraph-readout"
+        aria-live="polite"
+        // Reserved, so opening an entity does not push the page down and the
+        // prompt does not push the stage up when it first renders. Skeletons
+        // mirror the final content; a live region that resizes is a live
+        // region that shifts.
+        style={{ marginTop: 8, minHeight: 64 }}
+      >
+      {(error ?? refused) && (
+        <p
+          data-testid="nodegraph-error"
+          // role="alert" and not a colour: a reader who cannot see the amber
+          // still gets told, and the words say what was refused and what the
+          // renderer did about it. Nothing partial was drawn — that is the
+          // library's contract, and it is the reassurance this line owes.
+          role="alert"
+          style={{ margin: 0, fontSize: 12, color: dark ? "#f0b37e" : "#8a4b10" }}
+        >
+          Batch refused, nothing drawn: {error ?? refused}. The graph still
+          shows the last accepted state.
+        </p>
+      )}
+      {!selected && !(error ?? refused) && (
+        <p
+          data-testid="nodegraph-empty"
+          style={{ margin: 0, fontSize: 12, color: muted }}
+        >
+          {graph.order === 0
+            ? "No entities yet. The graph fills in as events arrive."
+            : "Select an entity — click it, or focus the graph and press the arrow keys — to read its measured count, its visit history, and the receipt behind any curated claim."}
+        </p>
+      )}
       {selected && (
         <dl
           data-testid="nodegraph-selection"
           style={{
-            marginTop: 8,
+            marginTop: 0,
             marginBottom: 0,
             display: "grid",
             gridTemplateColumns: "auto 1fr",
@@ -740,7 +960,7 @@ export function NodeGraph({
           </dd>
           <dt style={{ color: muted }}>visits</dt>
           <dd data-testid="visits-readout" style={{ margin: 0 }}>
-            {(graph.getNodeAttribute(selected.id, "visits") as number) ?? 0}{" "}
+            {selected.visits}{" "}
             <span style={{ color: muted }}>
               — interaction frequency, not evidence strength
             </span>
@@ -779,6 +999,7 @@ export function NodeGraph({
           )}
         </dl>
       )}
+      </div>
     </section>
   );
 }

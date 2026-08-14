@@ -23,7 +23,11 @@ const page = await context.newPage();
 const video = page.video();
 
 await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded", timeout: 60_000 });
-await page.waitForFunction(() => document.querySelectorAll("#scenarios button").length === 10);
+// Wait for demo.js to have BOUND the chips, not merely for chips to exist:
+// they are markup now, present before any script runs, so counting them
+// proves nothing. The module ends by clicking the default scenario, and
+// that click is what sets `.active`.
+await page.waitForFunction(() => !!document.querySelector("#scenarios button.active"));
 
 // Per-scenario stills: click, wait to its liveliest / most-formed moment.
 const SHOTS = [

@@ -41,7 +41,7 @@ neither imports the other. The former standalone repos (`nodegraph-render`,
 
 ## What it looks like
 
-**The scenario gallery** — ten scenarios in the bundled demo (`npm run demo`),
+**The scenario gallery** — eleven scenarios in the bundled demo (`npm run demo`),
 from a 142-entity constellation streaming in over twelve interlocked clusters
 to the deliberately still "calm by contract" case. Captured by
 `scripts/capture-gallery.mjs`; the full cycle is
@@ -216,7 +216,7 @@ npm run build
 npm run demo
 ```
 
-Open `http://127.0.0.1:4173`. Each of the ten scenario chips above the stage
+Open `http://127.0.0.1:4173`. Each of the eleven scenario chips above the stage
 rebuilds an empty session and streams one story into it: unknown beside
 measured zero, an evidence edge landing, traversal history joining it, a fully
 receipted Reactome assertion chain. Pressing a chip again replays it, which is

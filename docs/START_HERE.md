@@ -87,9 +87,11 @@ or 404.
 ## Step 2 — The primary user action: pressing a scenario chip
 
 **File:** `render/demo/demo.js`
-**Symbol:** the click handler built in the `SCENARIOS.map`
-(`render/demo/demo.js:260`) loop
-**Called by:** the reader clicking one of the ten chips above the stage
+**Symbol:** the click handler bound in the `buttons.forEach`
+(`render/demo/demo.js:303`) loop — the chips themselves are markup in
+`render/demo/index.html`, and this loop refuses to bind if the two lists have
+drifted
+**Called by:** the reader clicking one of the eleven chips above the stage
 **Calls next:** `scenario.run()`, which calls `GraphSession.observe` /
 `GraphSession.assertEdge` on timers
 
@@ -312,8 +314,8 @@ exactly which nodes, relationships and clusters changed, and
 ## Step 7 — Streaming and rendering: how progress reaches the interface
 
 **File:** `render/src/NodeGraph.tsx`
-**Symbol:** the patch `useEffect` (`render/src/NodeGraph.tsx:128`) and the
-cinematic overlay `useEffect` (`render/src/NodeGraph.tsx:392`)
+**Symbol:** the patch `useEffect` (`render/src/NodeGraph.tsx:168`) and the
+cinematic overlay `useEffect` (`render/src/NodeGraph.tsx:525`)
 **Called by:** React, when the session snapshot changes
 **Calls next:** `patchGraph` (`render/src/graph-model.ts:392`), then Sigma
 repaints itself

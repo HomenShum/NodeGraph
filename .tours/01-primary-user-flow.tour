@@ -5,28 +5,28 @@
   "steps": [
     {
       "file": "render/demo/index.html",
-      "line": 53,
+      "line": 111,
       "pattern": "src=\"/demo/demo\\.js\"",
       "title": "The entry point is a plain HTML page",
       "description": "No framework, no router, no bundler. React, Sigma and Graphology arrive through the import map above; this module script is the whole entry. That is the claim the demo exists to prove, and the cost is that first load needs network."
     },
     {
       "file": "render/scripts/serve-demo.mjs",
-      "line": 32,
+      "line": 36,
       "pattern": "const relative =",
       "title": "Fifty lines of node:http instead of a static-server dependency",
       "description": "`/` serves the demo page; anything resolving outside the served root gets 403 before a single stat call. The two optional arguments exist so the SAME server can host `examples/compose`, which lives above this package and imports `dist/` from both layers."
     },
     {
       "file": "render/demo/demo.js",
-      "line": 263,
+      "line": 305,
       "pattern": "b\\.addEventListener\\(\"click\"",
       "title": "The primary user action",
       "description": "Every user action in this app enters here. Pressing a chip clears the previous scenario's timers, marks the chip active, swaps the caption, and calls run(). Ten chips, ten stories about the same trust grammar."
     },
     {
       "file": "render/demo/demo.js",
-      "line": 17,
+      "line": 21,
       "pattern": "const resetSession =",
       "title": "Each press starts from an empty session",
       "description": "resetSession cancels every pending timer and bumps a nonce that prefixes every eventId. Without the nonce, replaying a scenario would look like a duplicate to the deduplication memory in tour 3 and draw nothing."
@@ -75,21 +75,21 @@
     },
     {
       "file": "render/src/NodeGraph.tsx",
-      "line": 129,
-      "pattern": "const patch = patchGraph\\(",
+      "line": 171,
+      "pattern": "patch = patchGraph\\(",
       "title": "Growth is patched, never rebuilt",
       "description": "patchGraph diffs the props into the live Graphology graph in place. Rebuilding would tear down the Sigma instance (five canvases and the layout) and replay the whole lifecycle per update, which reads as flicker. It returns WHICH elements were born, so the overlay can flare exactly those."
     },
     {
       "file": "render/src/NodeGraph.tsx",
-      "line": 139,
+      "line": 186,
       "pattern": "liveUntil\\.current = now \\+ 3200",
       "title": "Motion is bounded by data",
       "description": "An ingestion opens a 3.2s live window. The rAF loop in the cinematic overlay effect exits when it closes, so the steady state is a still canvas costing zero frames. Animation means 'the system did this just now', never 'the system is thinking', and never a magnitude."
     },
     {
       "file": "render/src/NodeGraph.tsx",
-      "line": 738,
+      "line": 958,
       "pattern": "data-testid=\"count-readout\"",
       "title": "The readout that closes the loop",
       "description": "Click a node and this is what a reader gets: the count, spelled 'unknown - not measured' when absent, and `visits` labelled in words as interaction frequency, not evidence strength. The receipt chips below carry source, release and a literal URL that replays the claim."

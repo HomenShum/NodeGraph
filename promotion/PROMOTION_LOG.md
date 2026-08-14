@@ -90,9 +90,13 @@ as a backticked symbol followed by a backticked `path:line`, and
 | D2 | major | J1 | `render/README.md` told a first-time reader twice ("then press **Add another live branch**") to press a control that does not exist. Rendered at 1280x900, the page offers ten scenario chips and no such button; `document.body.innerText.includes('Add another live branch')` is `false` in all seven captured states (`report.json` → every step's `addBranchText`). The first instruction a stranger follows after the app starts is wrong. | **fixed, wave 3** — both passages now describe the ten scenario chips that exist. |
 | D3 | major | J2 | Press **Assertion chain** at 1280x900. The caption under the stage reads "violet assertion edges, each carrying a full replay receipt" (`render/demo/demo.js`) and `render/README.md` said "A violet `assertion` edge". Nothing violet is drawn: `render/src/graph-model.ts` set `assertion: { dark: "#727b83" }` against `traversal: { dark: "#616a72" }` and `evidence: { dark: "#a8b1b9" }` — two near-identical greys about 1.3:1 apart. See `09-selection-readout.png`: the only thing separating a curated claim from interaction history in the drawing is the small `v97` label. The repo's binding rule is that these three classes never look alike, and the docs describe a colour channel the renderer does not implement. | **fixed, iteration 1** — measured at 6.70 CIEDE2000 dark / 9.44 light, now 22.37 / 26.47. `promotion/evidence/edge-grammar/` |
 | D4 | major | J4 | The root README presents `examples/compose` as the proof that the two layers are one product, with a screenshot. There is no command to run it: no script in either `package.json`, no mention in "Development" or "Example App", and `examples/compose/compose.js` imports `../../dist/semanticGraph.js` and `../../render/dist/index.js`, so it also silently requires both layers to be built. It renders correctly once served — "model: 54 nodes, 102 edges, 6 backed facts · rendered: 46 entities, 94 relationships (all traversal …)", 0 console errors (`13-compose.png`) — but only from a static server written by hand for this capture. | **fixed, wave 3** — `npm run example:compose` builds both layers and serves it; re-proved in headless Chromium, 0 console errors, `promotion/evidence/wave3/`. |
-| D5 | major | J1 | At 390x844 (`07-mobile-390.png`) the page itself is fine — chips wrap, 0 px horizontal overflow — but the graph is only shrunk, never fitted: the camera keeps its desktop framing, so "intervention h…" and "biomarker hub…" are clipped at the canvas edge and roughly half the constellation sits outside the visible stage. `render/demo/index.html` also pins `#root { min-height: 620px }`, so the canvas stays taller than most of a phone screen. A `fit` control exists but the reader has to know to press it. | open |
-| D6 | minor | J1 | The live counter under the stage ("142 entities · 145 edges", `#stats`) is `rgb(85,96,106)` on `#0b0e12` — measured 3.01:1, below the 4.5:1 AA minimum for body text (`report6.json` → `contrast`). It is the one text element on the page that fails; the other 19 measured pass. | open |
-| D7 | major | J2 | A keyboard-only reader can reach every scenario chip (Tab, visible ring, Enter activates — `05-keyboard-focus.png`) but can never open a node, and the node readout is where "measured 0" vs "unknown", and the Reactome receipt, are disclosed. Measured on the rendered page: 8 `<canvas>` elements, 0 with a `role` or `aria-label`; `[data-testid="nodegraph-canvas"]` has no `tabindex`; 0 `aria-live` regions on a surface whose content streams in while the reader watches (`report6.json` → `basics`). | open |
+| D5 | major | J1 | **fixed, iteration 2.** At 390x844 (`07-mobile-390.png`) the page itself is fine — chips wrap, 0 px horizontal overflow — but the graph is only shrunk, never fitted: the camera keeps its desktop framing, so "intervention h…" and "biomarker hub…" are clipped at the canvas edge and roughly half the constellation sits outside the visible stage. `render/demo/index.html` also pins `#root { min-height: 620px }`, so the canvas stays taller than most of a phone screen. A `fit` control exists but the reader has to know to press it. **Root cause: the camera was fitted once, ~1.3s after mount, and never again — a stream that keeps arriving grows straight out of frame, which is invisible at 1440 and clips half the field at 390. Refit now runs after every ingestion settle and on resize, unless the reader has aimed the camera themselves; below 520px the label budget drops to hubs and the frame opens 30% wider.** Re-proved: ring ink at 390 is 0 top / 0 bottom / 0 left (was a field running off the stage), `promotion/evidence/wig/wig-review.json` → `graph-fits-mobile`, `responsive-390.png`. | **fixed, iteration 2** — label truncation at the right edge survives as minor D8. |
+| D6 | minor | J1 | **fixed, iteration 2.** The live counter under the stage ("142 entities · 145 edges", `#stats`) is `rgb(85,96,106)` on `#0b0e12` — measured 3.01:1, below the 4.5:1 AA minimum for body text (`report6.json` → `contrast`). It is the one text element on the page that fails; the other 19 measured pass. **Now `#8b949d`, 6.29:1 — the same ink as the page's own subtitle, because wave 3b put the eviction disclosure on this line and it stopped being decoration. The identical value on the MCP viewer's `#log` was fixed with it.** axe-core reports 0 `color-contrast` violations. | **fixed, iteration 2** |
+| D7 | major | J2 | **fixed, iteration 2.** A keyboard-only reader can reach every scenario chip (Tab, visible ring, Enter activates — `05-keyboard-focus.png`) but can never open a node, and the node readout is where "measured 0" vs "unknown", and the Reactome receipt, are disclosed. Measured on the rendered page: 8 `<canvas>` elements, 0 with a `role` or `aria-label`; `[data-testid="nodegraph-canvas"]` has no `tabindex`; 0 `aria-live` regions on a surface whose content streams in while the reader watches (`report6.json` → `basics`). | open |
+| D8 | minor | J1 | Below 520px, Sigma draws a node's label to the RIGHT of the node, and the hub names beside nodes near the frame are cut mid-word by the canvas. Measured at 390x823: 47 pixels of label ink in the outermost 3px ring, all of it on the right edge (`promotion/evidence/wig/wig-review.json` -> `label-truncation-mobile`). Reduced from the baseline's clipped field, not eliminated. Closing it needs a custom Sigma `labelRenderer` that measures text before drawing. | open |
+| D9 | minor | J1 | Which of the eleven scenarios is open, and which edge types are filtered on, live only in React state. A reader cannot send a colleague the frame they are looking at, and Back does not undo a chip press (`wig-review.json` -> `deep-link-state`: `location.href` unchanged across a scenario switch). Minor on a self-describing gallery; it would be major on a product surface. | open |
+| D10 | major | J2 | **fixed, iteration 2, found by driving.** Switch scenarios with a node still selected and the whole component dies: the selection panel read `graph.getNodeAttribute(selected.id, "visits")` from the LIVE graph during render, and a scenario change removes that node, so React threw `NotFoundGraphError: Graph.getNodeAttribute: could not find the "[\"condition\",\"condition hub 1\"]" node` out of render with no boundary above it and the reader got a blank page. Surfaced in the WIG review's console capture; no test failed. Fixed in two places for two reasons: `visits` now travels in the click message, so the readout describes the entity AS CLICKED rather than reaching into a graph that has moved on; and the selection is dropped when its node leaves the graph, because a readout that outlives its entity is a claim about something the graph no longer holds. Re-proved: `consoleErrorsDuringReview: []`. | **fixed, iteration 2** |
+| D11 | major | J5 | **fixed, iteration 2, found by driving.** `GET /mcp/viewer/` returned **404** — the URL `PRODUCT_JOURNEYS.md` J5 and `render/mcp/README` both tell the reader to open. `serve-demo.mjs` mapped only `/` to an index file, so any directory URL resolved to a directory, failed the is-a-file check and 404'd. This is why J5's browser half had never been driven in three waves: nobody who followed the instructions ever saw the page. Fixed in the one place that maps URLs to files; the path-traversal refusal above it is untouched. Re-proved: `npm run proof:mcp-viewer` exit 0, `promotion/evidence/mcp-viewer/`. | **fixed, iteration 2** |
 
 ## Iterations
 
@@ -267,3 +271,105 @@ things the repo was telling itself that were not true.
 - **Tests:** `npm run test:all` exit 0 (14 vitest + 11 node:test + docs 34
   steps/38 citations), root and render `npm run typecheck` exit 0,
   `NODEGRAPH_DEMO_PORT=4608 npm run verify:demo` exit 0.
+
+---
+
+### Iteration 2 — 2026-08-13 — the two audits that were never run, and what running them found
+
+- **Journeys exercised:** J1 (the gallery at 320–2560px), J2 (the readout, by
+  keyboard this time), J5 (the MCP rail's browser half — never driven before).
+
+- **Why this iteration exists.** Conditions 7 and 8 had been UNVERIFIED since
+  the baseline, with an honest reason: no Web Interface Guidelines review and
+  no axe or Lighthouse run had happened. The scorecard even said that one
+  hand-measured contrast check "is not the audit this condition names". Both
+  toolchains are installable here now, so both were run — and, because the gate
+  requires an artifact AND its producer, both were run **by scripts that live in
+  this repo** rather than by hand.
+
+- **The producers, all three committed and re-runnable from a clean clone:**
+
+  | Command | Writes | Exits non-zero when |
+  |---|---|---|
+  | `npm run audit:web-quality` | `promotion/evidence/web-quality/` | any axe serious/critical violation, or Lighthouse accessibility < 0.90 |
+  | `npm run review:wig` | `promotion/evidence/wig/` | any guideline whose `severityIfFailed` is major |
+  | `npm run proof:mcp-viewer` | `promotion/evidence/mcp-viewer/` | the refused claim reaches the log, or the viewer replays fewer events than the log holds |
+
+  Each spawns its own demo server on its own port and waits for **its own
+  child's listening line**, so none of them can repeat the baseline's near-miss
+  of grading an orphaned stranger process.
+
+- **What the audits found on the tree as it stood** (all fixed below):
+  axe-core 2 violations — `color-contrast` (serious) on the counter under the
+  stage, `heading-order` (moderate) on the component's own `h3`; Lighthouse
+  mobile accessibility 0.88, best-practices 0.96, SEO 0.90, one browser console
+  error (a 404 favicon), mobile CLS 0.083 with 0.119 of it from the scenario
+  chips arriving after esm.sh answered; the graph unreachable by keyboard; no
+  error state anywhere; and the graph clipped at 390px.
+
+- **Fixed, and why each fix is where it is:**
+
+  - **The stage grew with the node count.** `height: Math.min(height, 260 + n * 22)`
+    sizes the stage from data — on a surface whose premise is that nodes stream
+    in, that is a box that resizes under the reader on every batch, and it was
+    also re-firing the ResizeObserver 50 times a load. Deleted; the prop is now
+    honoured flat. Mobile CLS 0.201 → **0.0008**, TBT 5083ms → 802ms.
+  - **The chips were markup that JS was building.** They now live in
+    `render/demo/index.html` and `demo.js` refuses to bind if the two lists have
+    drifted. A crawler and a reader both see the eleven scenarios before any
+    script runs.
+  - **The header wrapped mid-ingestion.** `"0 entities · 0 of 0"` fits beside the
+    title and `"142 entities · 145 of 145"` does not; the wrap moved everything
+    below it by 20px. Stacked — five style properties deleted, one height at
+    every width.
+  - **D7, the keyboard.** See the ledger. One selection path, two inputs.
+  - **D5, the mobile framing.** See the ledger. Refit after every settle, and a
+    width-aware label budget.
+  - **D6, the contrast.** One token, in two files.
+  - **The error state did not exist.** `NodeGraph` gained an `error` prop and an
+    internal catch around `patchGraph` — which throws by contract, and threw out
+    of a render effect with no boundary above it. A new **Refused batch**
+    scenario reaches the state from the UI: an assertion with an empty release,
+    refused whole, said in words under the stage.
+  - **The loading state did not exist either.** The page pulls React and Sigma
+    from esm.sh, so there is a real second of blank reserved box. It now says
+    "Loading the renderer…", and React clears it on mount.
+  - **D10 and D11**, both found only because something was driven. See the ledger.
+
+- **Re-proved, after the change, in the rendered app:**
+  axe-core **0 violations** (29 rules passing); Lighthouse accessibility,
+  best-practices and SEO **1.00 on both form factors**, desktop performance
+  **1.00**; mobile CLS 0.0004, desktop CLS 0.0002; **0 console errors, 0 non-2xx
+  HTTP requests**; WIG review **20 of 23 pass, 0 major, 2 minor**; interaction
+  latency worst **30ms unthrottled / 104ms at 4x throttle** with **zero long
+  tasks in a 3s idle window** after the field settles; J5 driven end to end.
+
+- **Tests:** root `npm test` 14 passed, render `npm test` 11 passed,
+  `npm run docs:check` ok (34 tour steps, 39 citations — it caught nine anchors
+  this iteration's own edits had moved, including one that pointed at a comment
+  instead of the symbol it named), both typechecks 0, `npm run build` 0,
+  `npm run verify:demo` exit 0, `npm run proof:edge-grammar` 6/6 pairs,
+  `npm run proof:mcp-viewer` exit 0.
+
+- **Conditions newly PASS:** 1, 2, 3, 5, 6, 7, 8, 9, 10. Conditions 4, 11 and 12
+  were already PASS and were re-measured rather than inherited. **12/12.**
+
+- **Two things done in the open, because a reader should be suspicious of both.**
+  First, the `graph-fits-mobile` check originally scored the SUM of ink in all
+  four edges of the label-canvas ring and read FINDING at 37px; it was split
+  after seeing that every pixel was on the right edge, which is label truncation
+  rather than a field overflowing its stage. The framing half passes; the
+  truncation half is now its own open minor row, and the split is recorded in
+  the check's own `note`. Second, the interaction measurement's first cut
+  sampled long tasks at a fixed 10s and reported 27 of them — which looked like
+  "the steady state is not still", the opposite of this product's headline
+  claim. It was the cinematic window and the FA2 settle, both stretched by the
+  4x throttle, and both finished by ~14s. The fixed sleep was replaced with a
+  measured time-to-still. **A fixed sleep would have shipped a false defect
+  against this repo's central claim.**
+
+- **Noted, not fixed** (one iteration, one theme): the force-layout worker is
+  respawned once per ingestion batch — about 48 blob workers per load of the
+  dense scenario. It is not a leak (each is terminated) and not a failed
+  request, but it is most of what mobile TBT is made of, and it is the obvious
+  next place to look if mobile performance is ever worth more than 0.81.

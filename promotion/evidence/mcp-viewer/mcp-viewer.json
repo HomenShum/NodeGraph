@@ -1,0 +1,20 @@
+{
+  "journey": "J5",
+  "provedAt": "2026-08-14T03:23:21.254Z",
+  "verdict": "PASS",
+  "failures": [],
+  "checks": {
+    "sessionExitCode": 0,
+    "boundaryHeld": true,
+    "refusalReported": true,
+    "acceptedEventsInLog": 6,
+    "refusedClaimInLog": 0,
+    "acceptedAssertionsInLog": 1,
+    "railText": "6 accepted events replayed · 8 entities · 11 edges",
+    "eventsReplayedInBrowser": 6,
+    "receiptVisibleInReadout": true,
+    "readout": "entityPD-1 · proteincountunknown — not measuredvisits0 — interaction frequency, not evidence strengthassertionsCo-inhibition by PD-1 · Reactome v97 · receipt",
+    "consoleErrors": []
+  },
+  "sessionOutput": "server: nodegraph-mcp\ntools: observe, assert_edge\nreceipted assert: accepted\nunreceipted assert: refused — receipt.release must be a non-empty string\nMCP SESSION COMPLETE — boundary held"
+}

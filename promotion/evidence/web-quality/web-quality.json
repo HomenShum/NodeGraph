@@ -1,0 +1,223 @@
+{
+  "condition": 8,
+  "surface": "render/demo/index.html — the demo gallery the reduced gate judges this package on",
+  "url": "http://127.0.0.1:4907/",
+  "measuredAt": "2026-08-14T03:18:48.447Z",
+  "tools": {
+    "lighthouse": "lighthouse@13.4.1",
+    "axe": "@axe-core/cli@4.13.0"
+  },
+  "commands": [
+    "npx --yes lighthouse@13.4.1 http://127.0.0.1:4907/ --output=json --output-path=C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\limits\\NodeGraph\\repo\\promotion\\evidence\\web-quality\\lighthouse-mobile.json --chrome-flags=--headless --quiet",
+    "npx --yes lighthouse@13.4.1 http://127.0.0.1:4907/ --output=json --output-path=C:\\Users\\hshum\\AppData\\Local\\Temp\\claude\\D--VSCode-Projects-cheiron-ai-take-home\\440ef9e9-83bb-4fe6-8676-4fdaaf332f3e\\scratchpad\\limits\\NodeGraph\\repo\\promotion\\evidence\\web-quality\\lighthouse-desktop.json --chrome-flags=--headless --quiet --preset=desktop",
+    "npx --yes @axe-core/cli@4.13.0 http://127.0.0.1:4907/ --save promotion/evidence/web-quality/axe.json"
+  ],
+  "verdict": "PASS",
+  "majors": [],
+  "axe": {
+    "engine": "4.13.0",
+    "violationCount": 0,
+    "violations": [],
+    "passCount": 29,
+    "incompleteCount": 0,
+    "report": "axe.json"
+  },
+  "lighthouse": {
+    "mobile": {
+      "version": "13.4.1",
+      "formFactor": "mobile",
+      "scores": {
+        "performance": 0.81,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "webVitals": {
+        "lcpMs": 1058.66325,
+        "cls": 0.0003983343368706381,
+        "fcpMs": 907.219375,
+        "tbtMs": 802,
+        "ttiMs": 6408.823500000001
+      },
+      "failingAudits": [
+        {
+          "id": "speed-index",
+          "score": 0.97,
+          "title": "Speed Index"
+        },
+        {
+          "id": "total-blocking-time",
+          "score": 0.36,
+          "title": "Total Blocking Time"
+        },
+        {
+          "id": "max-potential-fid",
+          "score": 0.19,
+          "title": "Max Potential First Input Delay"
+        },
+        {
+          "id": "interactive",
+          "score": 0.6,
+          "title": "Time to Interactive"
+        },
+        {
+          "id": "mainthread-work-breakdown",
+          "score": 0,
+          "title": "Minimize main-thread work"
+        },
+        {
+          "id": "bootup-time",
+          "score": 0,
+          "title": "Reduce JavaScript execution time"
+        },
+        {
+          "id": "unminified-javascript",
+          "score": 0.5,
+          "title": "Minify JavaScript"
+        },
+        {
+          "id": "unused-javascript",
+          "score": 0.5,
+          "title": "Reduce unused JavaScript"
+        },
+        {
+          "id": "cache-insight",
+          "score": 0.5,
+          "title": "Use efficient cache lifetimes"
+        },
+        {
+          "id": "document-latency-insight",
+          "score": 0.5,
+          "title": "Document request latency"
+        },
+        {
+          "id": "duplicated-javascript-insight",
+          "score": 0.5,
+          "title": "Duplicated JavaScript"
+        },
+        {
+          "id": "forced-reflow-insight",
+          "score": 0,
+          "title": "Forced reflow"
+        },
+        {
+          "id": "network-dependency-tree-insight",
+          "score": 0,
+          "title": "Network dependency tree"
+        }
+      ],
+      "consoleErrors": [],
+      "network": {
+        "requests": 91,
+        "blobWorkerUrls": 49,
+        "nonOk": []
+      },
+      "report": "lighthouse-mobile.json"
+    },
+    "desktop": {
+      "version": "13.4.1",
+      "formFactor": "desktop",
+      "scores": {
+        "performance": 1,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "webVitals": {
+        "lcpMs": 406.2676,
+        "cls": 0.00022574519121000737,
+        "fcpMs": 304.7007,
+        "tbtMs": 5,
+        "ttiMs": 1264.4827
+      },
+      "failingAudits": [
+        {
+          "id": "speed-index",
+          "score": 0.98,
+          "title": "Speed Index"
+        },
+        {
+          "id": "unminified-javascript",
+          "score": 0,
+          "title": "Minify JavaScript"
+        },
+        {
+          "id": "unused-javascript",
+          "score": 0.5,
+          "title": "Reduce unused JavaScript"
+        },
+        {
+          "id": "cache-insight",
+          "score": 0.5,
+          "title": "Use efficient cache lifetimes"
+        },
+        {
+          "id": "document-latency-insight",
+          "score": 0.5,
+          "title": "Document request latency"
+        },
+        {
+          "id": "duplicated-javascript-insight",
+          "score": 0.5,
+          "title": "Duplicated JavaScript"
+        },
+        {
+          "id": "forced-reflow-insight",
+          "score": 0,
+          "title": "Forced reflow"
+        },
+        {
+          "id": "network-dependency-tree-insight",
+          "score": 0,
+          "title": "Network dependency tree"
+        }
+      ],
+      "consoleErrors": [],
+      "network": {
+        "requests": 89,
+        "blobWorkerUrls": 47,
+        "nonOk": []
+      },
+      "report": "lighthouse-desktop.json"
+    }
+  },
+  "interaction": {
+    "scenario": "Dense constellation — 142 entities, 145 edges",
+    "viewport": "412x823",
+    "stage": {
+      "w": 344,
+      "h": 576
+    },
+    "keyToReadoutMs": {
+      "throttled4x": [
+        104,
+        64,
+        57,
+        50,
+        51
+      ],
+      "unthrottled": [
+        17,
+        7,
+        13,
+        30,
+        17
+      ]
+    },
+    "worstKeyToReadoutMs": {
+      "throttled4x": 104,
+      "unthrottled": 30
+    },
+    "longTasks": {
+      "duringLoadAndStream": 67,
+      "idleAfterSettle": [],
+      "duringFiveSelections": []
+    },
+    "stillAtMsThrottled4x": 9000,
+    "bar": "worst unthrottled key-to-readout <= 200ms (INP good), and zero long tasks in a 3s idle window",
+    "verdict": "PASS"
+  },
+  "notCoveredHere": "Web Interface Guidelines review (condition 7) is a separate producer, promotion/scripts/review-wig.mjs. A Lighthouse score is not a guidelines review."
+}

@@ -4,6 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NodeGraph Live — scenario gallery</title>
+    <meta
+      name="description"
+      content="Eleven live scenarios for NodeGraph's trust grammar: measured evidence, curated assertions and traversal history never look alike."
+    />
+    <!-- The browser chrome matches the page ground instead of flashing white
+         above it; paired with color-scheme: dark below. -->
+    <meta name="theme-color" content="#0b0e12" />
+    <!-- An inline mark, because the alternative is a 404. The baseline's only
+         console error and only failed request on this page was
+         GET /favicon.ico, and a static server that serves no favicon still
+         costs a real reader a red line in devtools. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e12'/%3E%3Cpath d='M9 22 L16 10 L23 22' stroke='%23a276ee' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='22' r='3' fill='%2358c7a2'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2358c7a2'/%3E%3Ccircle cx='16' cy='10' r='3.4' fill='%23e2e6e9'/%3E%3C/svg%3E"
+    />
+    <!-- The module graph's longest chain runs through esm.sh; opening that
+         connection during HTML parse removes a DNS+TLS round trip from the
+         critical path (Lighthouse: network dependency tree). -->
+    <link rel="preconnect" href="https://esm.sh" crossorigin />
     <style>
       :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
       body { margin: 0; background: #0b0e12; color: #dfe5ea; }
@@ -14,13 +33,27 @@
       #scenarios button {
         border: 1px solid #2a323b; border-radius: 999px; background: #131922;
         color: #c8d2da; padding: 6px 12px; cursor: pointer; font-size: 12.5px;
+        /* No 300ms double-tap-zoom wait on a control whose whole job is to be
+           tapped (Web Interface Guidelines, Interactions). */
+        touch-action: manipulation;
       }
       #scenarios button:hover { border-color: #4b5865; }
       #scenarios button.active { background: #1d2a3a; border-color: #3d7bd9; color: #e8f1fa; }
       #stage { border: 1px solid #1d242c; border-radius: 12px; overflow: hidden; background: #0e1319; }
-      #root { display: block; width: 100%; min-height: 620px; }
+      /* Reserves what the component will actually occupy, so the caption and
+         the counter below it do not jump when React mounts. The stage itself
+         is min(620px, 70vh) — the same clamp NodeGraph applies — and 182px is
+         the measured chrome around it (header, filter row, readout). Never
+         more than the viewport can show: a flat 620px stage is two thirds of
+         an 844px phone. */
+      #root { display: block; width: 100%; min-height: calc(min(620px, 70vh) + 182px); }
       #caption { margin: 10px 2px 0; color: #7f8992; font-size: 12.5px; line-height: 1.5; max-width: 980px; }
-      #stats { color: #55606a; font-size: 12px; margin-top: 4px; }
+      /* Was #55606a: 3.01:1 on this ground, and this line carries the eviction
+         disclosure, not decoration. #8b949d is 6.29:1, the same ink as .sub.
+         Tabular figures so a counter that climbs while you read it does not
+         reflow its own digits. */
+      #stats { color: #8b949d; font-size: 12px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+      #boot { margin: 0; padding: 16px; color: #8b949d; font-size: 12.5px; }
     </style>
     <script type="importmap">
       {
@@ -41,12 +74,37 @@
     <main>
       <h1>NodeGraph Live — scenario gallery</h1>
       <p class="sub">
-        Ten scenarios, one trust grammar: evidence edges carry measured weight, assertions carry a
+        Eleven scenarios, one trust grammar: evidence edges carry measured weight, assertions carry a
         release badge, traversal is faint history. Motion runs only while an ingestion is live,
         then the field goes still. Drag anything — positions are layout, never meaning.
       </p>
-      <div id="scenarios"></div>
-      <div id="stage"><div id="root"></div></div>
+      <!-- The chips are MARKUP, not something demo.js appends after the module
+           graph finishes downloading React and Sigma from esm.sh. Built in JS
+           they arrived ~800 ms after first paint and pushed the stage down
+           130 px at 412 px wide — measured as 0.119 of this page's 0.20 mobile
+           CLS. As markup they are the right size at every width from the first
+           frame, and a reader (or a crawler) sees the eleven scenarios before any
+           script runs. demo.js checks this list against its own and refuses to
+           start if they have drifted, so there is no silent second source. -->
+      <div id="scenarios">
+        <button type="button">Unknown vs zero</button>
+        <button type="button">Evidence lands</button>
+        <button type="button">Deep traversal</button>
+        <button type="button">Hub burst</button>
+        <button type="button">Dense constellation</button>
+        <button type="button">Assertion chain</button>
+        <button type="button">Rapid fire</button>
+        <button type="button">Bounded memory</button>
+        <button type="button">Drag playground</button>
+        <button type="button">Refused batch</button>
+        <button type="button">Calm by contract</button>
+      </div>
+      <!-- The loading state, and it is a real one: this page pulls React,
+           Sigma and Graphology from esm.sh through an import map, so there is
+           a genuine second between first paint and first render. React's
+           createRoot clears this on mount. Without it the reader gets a blank
+           reserved box and no idea whether anything is coming. -->
+      <div id="stage"><div id="root"><p id="boot">Loading the renderer…</p></div></div>
       <p id="caption"></p>
       <p id="stats"></p>
     </main>

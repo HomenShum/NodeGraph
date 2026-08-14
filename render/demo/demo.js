@@ -13,11 +13,16 @@ import { NodeGraph } from "../dist/react.js";
 let session = new GraphSession({ maxNodes: 400, maxEdges: 900, maxSeen: 2000 });
 let timers = [];
 let nonce = 0;
+// The last refusal, if any. The session validates a batch and throws before it
+// mutates anything; this holds the reason so the renderer can show it instead
+// of the reader watching an event simply not arrive.
+let refusal = null;
 const later = (ms, fn) => timers.push(window.setTimeout(fn, ms));
 const resetSession = (opts) => {
   for (const t of timers) window.clearTimeout(t);
   timers = [];
   nonce += 1;
+  refusal = null;
   session = new GraphSession(opts ?? { maxNodes: 400, maxEdges: 900, maxSeen: 2000 });
   rerender();
 };
@@ -208,6 +213,32 @@ const SCENARIOS = [
     },
   },
   {
+    name: "Refused batch",
+    caption:
+      "The recovery path, on purpose. A measured pair lands, then an assertion arrives with an empty " +
+      "release — a claim with no way back to its source. The session refuses the whole batch before " +
+      "drawing any of it, the reason appears under the stage, and the accepted graph is untouched. " +
+      "Half a claim is worse than none.",
+    run() {
+      resetSession();
+      later(200, () =>
+        session.observe([ent("intervention", "vemurafenib"), ent("protein", "BRAF V600E")], 89, { eventId: id("ok") }));
+      later(1400, () => {
+        try {
+          session.assertEdge(
+            ent("intervention", "vemurafenib"),
+            ent("protein", "BRAF V600E"),
+            { ...receipt("R-HSA-6802912", "R-HSA-6802913"), release: "" },
+            { eventId: id("bad") },
+          );
+        } catch (refused) {
+          refusal = refused.message;
+          rerender();
+        }
+      });
+    },
+  },
+  {
     name: "Calm by contract",
     caption:
       "The anti-morpho scenario, on purpose: after one small ingestion the field goes COMPLETELY " +
@@ -244,6 +275,7 @@ function Demo() {
     nodes: snapshot.nodes,
     edges: snapshot.edges,
     visits: session.visitsById(),
+    error: refusal,
     height: 620,
     dark: true,
   });
@@ -255,19 +287,27 @@ function App() {
   return React.createElement(Demo);
 }
 
-const bar = document.querySelector("#scenarios");
 const caption = document.querySelector("#caption");
-const buttons = SCENARIOS.map((s, i) => {
-  const b = document.createElement("button");
-  b.textContent = s.name;
+// The chips are in index.html so they occupy their real space from the first
+// frame instead of arriving after esm.sh answers (measured: 0.119 CLS at
+// 412px). That makes the markup a second copy of these names, so this refuses
+// to run rather than binding the wrong scenario to the wrong label.
+const buttons = [...document.querySelectorAll("#scenarios button")];
+const drift = buttons.length !== SCENARIOS.length
+  ? `${buttons.length} chips in index.html, ${SCENARIOS.length} scenarios here`
+  : SCENARIOS.map((s, i) => (buttons[i].textContent.trim() === s.name ? null
+      : `chip ${i} reads "${buttons[i].textContent.trim()}", scenario ${i} is "${s.name}"`))
+      .filter(Boolean)
+      .join("; ");
+if (drift) throw new Error(`scenario chips have drifted from demo.js: ${drift}`);
+buttons.forEach((b, i) => {
+  const s = SCENARIOS[i];
   b.addEventListener("click", () => {
     for (const other of buttons) other.classList.remove("active");
     b.classList.add("active");
     caption.textContent = s.caption;
     s.run();
   });
-  bar.appendChild(b);
-  return b;
 });
 
 createRoot(document.querySelector("#root")).render(React.createElement(App));

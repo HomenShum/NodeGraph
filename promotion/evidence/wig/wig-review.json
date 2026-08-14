@@ -1,0 +1,356 @@
+{
+  "condition": 7,
+  "guidelines": "https://vercel.com/design/guidelines",
+  "guidelinesFetched": "2026-08-13",
+  "surface": "render/demo/index.html — the demo gallery the reduced gate judges this package on",
+  "url": "http://127.0.0.1:4907/",
+  "reviewedAt": "2026-08-14T03:35:38.078Z",
+  "verdict": "PASS",
+  "counts": {
+    "checked": 23,
+    "pass": 20,
+    "findings": 2,
+    "major": 0,
+    "minor": 2
+  },
+  "consoleErrorsDuringReview": [],
+  "rows": [
+    {
+      "id": "keyboard-everywhere",
+      "section": "Interactions",
+      "guideline": "Keyboard works everywhere — all flows are keyboard-operable.",
+      "how": "Tab from the document body until focus lands on the graph stage; press ArrowRight; read the live region.",
+      "severityIfFailed": "major",
+      "observed": {
+        "tabHopsToStage": 14,
+        "readoutOpened": true,
+        "readout": "entitycondition hub 1 · conditioncount100visits13 — interaction frequency, not evidence strength"
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "clear-focus",
+      "section": "Interactions",
+      "guideline": "Clear focus — every focusable element shows a visible focus ring.",
+      "how": "Focus the graph stage and the first scenario chip; read the computed outline of :focus-visible.",
+      "severityIfFailed": "major",
+      "observed": {
+        "stageRing": {
+          "outlineWidth": "1px",
+          "outlineStyle": "auto",
+          "outlineColor": "rgb(16, 16, 16)"
+        },
+        "chipRing": {
+          "outlineWidth": "1px",
+          "outlineStyle": "auto"
+        }
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "hit-targets",
+      "section": "Interactions",
+      "guideline": "Match visual & hit targets — expand any target under 24px.",
+      "how": "Bounding box of every button, link, input and tabbable element at 1440x900.",
+      "severityIfFailed": "major",
+      "observed": {
+        "smallestSide": 24,
+        "controls": 14
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "announce-async",
+      "section": "Interactions",
+      "guideline": "Announce async updates — polite aria-live for toasts & inline validation.",
+      "how": "Count aria-live regions present at load (not inserted at announce time) and confirm the selection readout is one of them.",
+      "severityIfFailed": "major",
+      "observed": [
+        {
+          "politeness": "polite",
+          "testid": "nodegraph-readout",
+          "text": "Select an entity — click it, or focus the graph and press the arrow keys — to re"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "no-dead-zones",
+      "section": "Interactions",
+      "guideline": "No dead zones — checkboxes and radios share one hit target with their label.",
+      "how": "Click the label's text span, not the box, and read the checkbox state.",
+      "severityIfFailed": "major",
+      "observed": {
+        "before": true,
+        "afterClickingLabelText": false
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "respect-zoom",
+      "section": "Interactions",
+      "guideline": "Respect zoom — never disable browser zoom.",
+      "how": "Read the viewport meta for user-scalable=no or a maximum-scale cap.",
+      "severityIfFailed": "major",
+      "observed": "width=device-width, initial-scale=1",
+      "verdict": "PASS"
+    },
+    {
+      "id": "double-tap-zoom",
+      "section": "Interactions",
+      "guideline": "Prevent double-tap zoom on controls — set touch-action: manipulation.",
+      "how": "Computed touch-action on a scenario chip.",
+      "severityIfFailed": "minor",
+      "observed": "manipulation",
+      "verdict": "PASS"
+    },
+    {
+      "id": "deep-link-state",
+      "section": "Interactions",
+      "guideline": "URL as state / deep-link everything — filters, tabs, expanded panels, any useState.",
+      "how": "Press a scenario chip and compare location.href before and after.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "before": "http://127.0.0.1:4907/",
+        "after": "http://127.0.0.1:4907/",
+        "changed": false
+      },
+      "verdict": "FINDING",
+      "note": "Which of the ten scenarios is open, and which edge types are filtered on, live only in React state. A reader cannot link a colleague to the frame they are looking at. Minor on a gallery whose scenarios are self-describing chips; it would be major on a product surface."
+    },
+    {
+      "id": "no-transition-all",
+      "section": "Animations",
+      "guideline": "Never `transition: all` — list only the intended properties.",
+      "how": "Read every authored CSS rule's transition shorthand and every inline style attribute containing `transition`.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "transitions": []
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "accurate-title",
+      "section": "Content",
+      "guideline": "Accurate page titles — <title> reflects the current context.",
+      "how": "document.title.",
+      "severityIfFailed": "minor",
+      "observed": "NodeGraph Live — scenario gallery",
+      "verdict": "PASS"
+    },
+    {
+      "id": "states-designed",
+      "section": "Content",
+      "guideline": "All states designed — empty, sparse, dense & error states. No dead ends: every screen offers a next step or a recovery path.",
+      "how": "Read the SERVED HTML for the pre-hydration loading copy; read the readout with nothing selected (empty) and with an entity open (success); read the counter for dense; then drive the 'Refused batch' scenario, which sends an assertion with an empty release, and read the alert.",
+      "severityIfFailed": "major",
+      "observed": {
+        "loading": "Loading the renderer…",
+        "empty": "Select an entity — click it, or focus the graph and press the arrow keys — to read its measured count, its visit history, and the receipt behind any curated claim.",
+        "dense": "142 entities · 145 of 145 relationships shown",
+        "success": "entitycondition hub 1 · conditioncount100visits13 — interaction frequency, not evidence strength",
+        "error": "Batch refused, nothing drawn: receipt.release must be a non-empty string. The graph still shows the last accepted state.",
+        "errorRole": "alert"
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "tabular-nums",
+      "section": "Content",
+      "guideline": "Tabular numbers for comparisons — font-variant-numeric: tabular-nums.",
+      "how": "Computed font-variant-numeric on the live counter under the stage.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "stats": "tabular-nums"
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "heading-order",
+      "section": "Content",
+      "guideline": "Headings & skip link — hierarchical h1-h6.",
+      "how": "Every heading in document order; a level may not jump by more than one.",
+      "severityIfFailed": "major",
+      "observed": [
+        "H1",
+        "H2"
+      ],
+      "verdict": "PASS",
+      "note": "Skip link: not applicable. There is no repeated navigation block to skip past — the page is a heading, a paragraph, the chips and the stage."
+    },
+    {
+      "id": "named-controls",
+      "section": "Content",
+      "guideline": "Icon-only buttons are named / accessible content — accurate accessible names.",
+      "how": "Accessible name (aria-label or text) of every button, link, input and tabbable element.",
+      "severityIfFailed": "major",
+      "observed": {
+        "unnamed": [],
+        "checked": 14
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "graph-is-named",
+      "section": "Content",
+      "guideline": "Don't ship the schema / accessible content — accessible names exist even where the visual layout omits labels.",
+      "how": "role, tabindex and aria-label on the element that owns Sigma's canvases.",
+      "severityIfFailed": "major",
+      "observed": {
+        "role": "application",
+        "tabindex": "0",
+        "label": "Relationship graph. Arrow keys move between entities and open the selected entity's readout below. Escape clears the selection."
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "color-scheme",
+      "section": "Design",
+      "guideline": "Set the appropriate color-scheme / browser UI matches your background.",
+      "how": "Computed color-scheme on :root, and the theme-color meta against the body background.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "colorScheme": "dark",
+        "themeColor": "#0b0e12",
+        "bodyBackground": "rgb(11, 14, 18)"
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "minimum-contrast",
+      "section": "Design",
+      "guideline": "Minimum contrast — text meets the contrast floor.",
+      "how": "Delegated to axe-core, which measures every text node in place. Cited, not re-derived.",
+      "severityIfFailed": "major",
+      "observed": {
+        "source": "promotion/evidence/web-quality/axe.json — color-contrast rule"
+      },
+      "verdict": "SEE-CONDITION-8"
+    },
+    {
+      "id": "preconnect",
+      "section": "Performance",
+      "guideline": "Preconnect to origins — <link rel=preconnect> for asset/CDN domains.",
+      "how": "Preconnect links against the origins the import map actually resolves to.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "preconnect": [
+          "https://esm.sh/"
+        ],
+        "importMapHosts": [
+          "https://esm.sh"
+        ]
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "no-horizontal-overflow",
+      "section": "Layout",
+      "guideline": "No excessive scrollbars / responsive coverage — verify mobile, laptop and ultra-wide.",
+      "how": "documentElement.scrollWidth - innerWidth at nine widths from 320 to 2560.",
+      "severityIfFailed": "major",
+      "observed": {
+        "320": 0,
+        "360": 0,
+        "390": 0,
+        "414": 0,
+        "768": 0,
+        "1024": 0,
+        "1280": 0,
+        "1440": 0,
+        "2560": 0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "graph-fits-mobile",
+      "section": "Layout",
+      "guideline": "Responsive coverage — the content is adapted to the width, not merely shrunk.",
+      "how": "At 390x823, count ink in the outermost 3px ring of Sigma's 2D label canvas, per edge. Ink at the top, bottom or left means the field itself runs off the stage.",
+      "severityIfFailed": "major",
+      "observed": {
+        "canvas": {
+          "w": 322,
+          "h": 576
+        },
+        "ring": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 47
+        },
+        "totalInkPixels": 2739
+      },
+      "verdict": "PASS",
+      "note": "This row was originally scored on the SUM of all four edges and read FINDING at 37px. Split after seeing where the ink actually was: all of it is on the right edge, which is label truncation, not a field that overflows its stage. The split is recorded here rather than applied quietly, and the right edge did not disappear — it is the `label-truncation-mobile` row below, still open."
+    },
+    {
+      "id": "label-truncation-mobile",
+      "section": "Content",
+      "guideline": "Resilient to user-generated content — layouts handle short, average and very long content.",
+      "how": "The right-edge ring of the same measurement: Sigma draws a node's label to its right, and a hub name beside a node near the frame is cut by the canvas.",
+      "severityIfFailed": "minor",
+      "observed": {
+        "rightEdgeInkPixels": 47,
+        "stageWidth": 322
+      },
+      "verdict": "FINDING",
+      "note": "Reduced but not closed. Below 520px the label budget drops to hubs only and the camera frames 30% wider, which took the field itself inside the frame (top/bottom/left ink now 0, was a constellation running off the stage). The remaining pixels are two hub names clipped mid-word at the right edge. Closing it needs a custom Sigma labelRenderer that measures text before drawing — a real change, not a tweak, and it is logged rather than smuggled into this pass."
+    },
+    {
+      "id": "reduced-motion",
+      "section": "Animations",
+      "guideline": "Honor prefers-reduced-motion — provide a reduced-motion variant.",
+      "how": "Load with prefers-reduced-motion: reduce and count lit pixels on the cinematic overlay 1.8s in, mid-ingestion.",
+      "severityIfFailed": "major",
+      "observed": {
+        "litOverlayPixelsDuringIngestion": 0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "stable-skeletons",
+      "section": "Content",
+      "guideline": "Stable skeletons — content that arrives must not shift what is already on screen.",
+      "how": "PerformanceObserver('layout-shift') over a 12s load at 412x823 with 4x CPU throttling.",
+      "severityIfFailed": "major",
+      "observed": {
+        "cumulativeLayoutShift": 0.0008
+      },
+      "verdict": "PASS"
+    }
+  ],
+  "screenshots": [
+    "desktop-1440.png",
+    "keyboard-selection.png",
+    "keyboard-focus-ring.png",
+    "state-error.png",
+    "responsive-390.png",
+    "responsive-768.png",
+    "reduced-motion.png"
+  ],
+  "invariantConflicts": [
+    {
+      "guideline": "Animations — \"Only animate when it clarifies cause & effect or adds deliberate delight.\"",
+      "conflict": "This surface animates ONLY while an ingestion is actually landing, and the flare's size follows the existing node-size channel rather than adding a new one. The guideline would permit motion as delight; the invariant forbids motion that encodes magnitude, so the narrower rule is applied.",
+      "resolution": "invariant wins — motion is a arrival signal only, and the steady state is still."
+    },
+    {
+      "guideline": "Design — \"Accessible charts. Use color-blind-friendly palettes.\"",
+      "conflict": "Hue alone cannot separate the three trust classes, and hue is already spent on node kind. The palette therefore carries the evidence/assertion/traversal distinction on a greyscale ramp as well as hue, measured in promotion/evidence/edge-grammar/.",
+      "resolution": "invariant wins, and it is the stricter reading of the guideline, not a waiver."
+    },
+    {
+      "guideline": "Interactions — \"Optimistic updates. Update the UI immediately when success is likely.\"",
+      "conflict": "Refused outright. An optimistically drawn edge is a claim the system has not confirmed, drawn in the same ink as one it has. Nothing is rendered until the batch is accepted.",
+      "resolution": "invariant wins — no optimistic rendering on this surface, at any latency cost."
+    }
+  ],
+  "notApplicable": [
+    "Forms (submission, autocomplete, password managers, unsaved-changes, Windows <select>): the only inputs on this surface are the edge-type checkboxes; there is no form, no submission and no field to autofill.",
+    "Copywriting (Vercel voice, Title Case, currency): product-specific house style for vercel.com, not a general interface rule.",
+    "Locale-aware formats and translation shields: the surface ships one language and formats no dates or currencies; counts use toLocaleString.",
+    "Tooltip timing, drag inert, overscroll containment, scroll restoration: no tooltips group, no HTML5 drag, no modal or drawer, and a single-screen page with no restorable scroll.",
+    "Image CLS and font preloading: the page ships no <img> and no webfont — it inherits the system UI stack."
+  ]
+}
