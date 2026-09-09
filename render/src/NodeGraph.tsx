@@ -276,6 +276,11 @@ export function NodeGraph({
     const DIM = dark ? "#2a2e33" : "#e2e5e7";
 
     const renderer = new Sigma(graph, el, {
+      // A host may hide this panel while ingestion continues. Sigma's strict
+      // zero-width error then escaped refresh and unmounted the React tree.
+      // Its supported hidden-container mode keeps the graph until resize;
+      // the observer below refreshes it when the panel becomes visible again.
+      allowInvalidContainer: true,
       renderLabels: true,
       // At a few thousand nodes every label is noise and a per-frame cost —
       // and on a narrow stage, so is a hundred and forty of them.
@@ -284,6 +289,31 @@ export function NodeGraph({
       labelSize: 13,
       labelWeight: "600",
       labelColor: { color: dark ? "#e2e6e9" : "#15181a" },
+      // Sigma's default label always extends right of its node. Camera fit
+      // frames geometry, so a long hub name still clipped at 390px. Put that
+      // label on the other side when it fits; omit offscreen/oversized labels.
+      // The keyboard and click readout below always retains the full name.
+      defaultDrawNodeLabel: (context, data, settings) => {
+        if (!data.label) return;
+        context.font = `${settings.labelWeight} ${settings.labelSize}px ${settings.labelFont}`;
+        const width = context.measureText(data.label).width;
+        let x = data.x + data.size + 3;
+        if (x + width > el.clientWidth - 8) x = data.x - data.size - 3 - width;
+        const y = data.y + settings.labelSize / 3;
+        if (x < 8 || x + width > el.clientWidth - 8 || y < settings.labelSize || y > el.clientHeight - 4) return;
+        context.fillStyle = dark ? "#e2e6e9" : "#15181a";
+        context.fillText(data.label, x, y);
+      },
+      // Sigma's default hover label has a white background even in a dark
+      // host. Keyboard highlighting therefore produced white-on-white text.
+      defaultDrawNodeHover: (context, data, settings) => {
+        context.beginPath();
+        context.arc(data.x, data.y, data.size + 3, 0, Math.PI * 2);
+        context.strokeStyle = dark ? "#e2e6e9" : "#15181a";
+        context.lineWidth = 2;
+        context.stroke();
+        settings.defaultDrawNodeLabel(context, data, settings);
+      },
       // The assertion badge: assertion edges carry their receipted release as
       // the edge label; other types carry no label, so nothing else changes.
       renderEdgeLabels: true,

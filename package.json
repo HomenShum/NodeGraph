@@ -23,7 +23,6 @@
   "scripts": {
     "prebuild": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "tsc -p tsconfig.json",
-    "postbuild": "node -e \"import('./dist/index.js').then((m) => { const n = Object.keys(m).length; if (n < 30) throw new Error('dist/index.js loaded but exported only ' + n + ' names'); })\"",
     "prepare": "npm run build",
     "example:build": "vite build examples/showcase --outDir ../../dist-showcase --emptyOutDir",
     "example:dev": "vite examples/showcase --host 127.0.0.1 --port 5174",
@@ -33,6 +32,7 @@
     "streamlit:capture": "node scripts/capture-streamlit-showcase.mjs",
     "test": "vitest run",
     "test:all": "vitest run && npm --prefix render test && npm run docs:check",
+    "verify:packages": "node scripts/verify-packages.mjs",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "proof:edge-grammar": "node promotion/scripts/prove-edge-grammar.mjs",
     "proof:mcp-viewer": "node promotion/scripts/prove-mcp-viewer.mjs",
@@ -56,7 +56,7 @@
     "react-dom": "^19.2.3",
     "typescript": "^5.8.3",
     "vite": "^7.3.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "exports": {
     ".": {

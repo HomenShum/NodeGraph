@@ -26,24 +26,22 @@ structure), `graphology-layout-forceatlas2` (the force layout, run in a worker),
 `@sigma/node-border` (the official Sigma program that draws ringed nodes).
 React is again a peer dependency.
 
-There is no CSS framework, no state library, no test framework in the view
-layer, no static-server package, and no MCP SDK. Each of those is either a
+There is no CSS framework, no state library, no static-server package, and no MCP SDK. Each of those is either a
 handful of lines here or a platform feature:
 
 | What a project this shape usually installs | What this repo uses instead |
 |---|---|
-| a static dev server | `render/scripts/serve-demo.mjs`, 50 lines of `node:http` |
+| a static dev server | `render/scripts/serve-demo.mjs`, using `node:http` |
 | an MCP server SDK | `render/mcp/server.mjs`, newline-delimited JSON-RPC over stdin |
-| a test framework in `render/` | `node --test`, in the standard library since Node 18 |
+| unit and browser checks in `render/` | `node --test` for contracts; Playwright and axe for the rendered user journey |
 | a CSS-in-JS or utility framework | inline style objects, so the component carries no CSS dependency |
 | a JSON-serialising helper API | `JSON.stringify(value, null, 2)` |
 
 ## Toolchain expected on PATH
 
-- **Node 22+**. `render/scripts/browser-demo-gate.mjs` uses the global
-  `WebSocket`, which lands in Node 22.
-- **Chrome or Chromium** for `cd render && npm run verify:demo`. It probes the
-  usual install paths and honours `NODEGRAPH_CHROME`.
+- **Node 22 or 24**, exercised by CI on Windows and Linux.
+- **Playwright Chromium** for browser checks. Install it with
+  `npx playwright install chromium` in the package whose browser command you run.
 - **`ffmpeg`** only for the README capture scripts (`npm run showcase:capture`).
 - **Python 3 + Streamlit** only for `examples/streamlit`.
 

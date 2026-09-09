@@ -33,7 +33,7 @@
  *      colour or opacity.
  */
 
-import Graph from "graphology";
+import Graph, { type MultiGraph as GraphType } from "graphology";
 
 export const EDGE_TYPES = ["evidence", "traversal", "assertion"] as const;
 export type EdgeTypeName = (typeof EDGE_TYPES)[number];
@@ -296,7 +296,7 @@ export function buildGraph(
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
   opts: BuildOptions = {},
-): Graph {
+): GraphType {
   // Validate the complete payload before mutating anything. A renderer that
   // paints half a batch before discovering an unknown edge type has already
   // made a false claim.
@@ -349,14 +349,14 @@ export function buildGraph(
 
 /** Edge types actually present, in declared order. Drives the filter UI:
  *  a toggle for a type with no edges is a control that does nothing. */
-export function edgeTypesPresent(g: Graph): EdgeTypeName[] {
+export function edgeTypesPresent(g: GraphType): EdgeTypeName[] {
   const seen = new Set<EdgeTypeName>();
   g.forEachEdge((_k, a) => seen.add(requireEdgeType(a[EDGE_TYPE_ATTR])));
   return EDGE_TYPES.filter((t) => seen.has(t));
 }
 
 /** Per-type edge counts, for labelling the toggles honestly. */
-export function edgeTypeCounts(g: Graph): Record<string, number> {
+export function edgeTypeCounts(g: GraphType): Record<string, number> {
   const out: Record<string, number> = {};
   g.forEachEdge((_k, a) => {
     const t = requireEdgeType(a[EDGE_TYPE_ATTR]);
@@ -390,7 +390,7 @@ export type PatchResult = {
 };
 
 export function patchGraph(
-  g: Graph,
+  g: GraphType,
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
   opts: BuildOptions = {},

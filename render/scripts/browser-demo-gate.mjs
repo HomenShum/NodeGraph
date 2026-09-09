@@ -1,303 +1,205 @@
-import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromium, expect } from "playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { startDemoServer } from "./serve-demo.mjs";
 
-const root = resolve(fileURLToPath(new URL("../", import.meta.url)));
-const wait = (ms) => new Promise((resolveWait) => setTimeout(resolveWait, ms));
-const stop = async (child) => {
-  if (!child || child.exitCode !== null) return;
-  child.kill();
-  await Promise.race([
-    new Promise((resolveExit) => child.once("exit", resolveExit)),
-    wait(2_000),
-  ]);
+const root = fileURLToPath(new URL("../", import.meta.url));
+const artifactRoot = resolve(root, ".proofloop");
+await mkdir(artifactRoot, { recursive: true });
+const out = await mkdtemp(resolve(artifactRoot, "viewer-"));
+const proof = { status: "RUNNING", states: [], motion: [], failures: [], resourcesClosed: false };
+const server = await startDemoServer();
+let browser;
+let compose;
+let page;
+const check = expect.configure({ timeout: 15_000 });
+
+const litPixels = () => {
+  const canvas = document.querySelector('[data-testid="cinematic-layer"]');
+  if (!canvas) throw new Error("overlay canvas missing");
+  const rgba = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  let lit = 0;
+  for (let i = 3; i < rgba.length; i += 4) if (rgba[i] > 0) lit++;
+  return lit;
 };
 
-const chromeCandidates = [
-  process.env.NODEGRAPH_CHROME,
-  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/usr/bin/google-chrome",
-  "/usr/bin/chromium",
-].filter(Boolean);
-
-const fromPath = process.platform === "win32"
-  ? spawnSync("where.exe", ["chrome.exe"], { encoding: "utf8" }).stdout?.split(/\r?\n/)[0]
-  : spawnSync("sh", ["-lc", "command -v google-chrome || command -v chromium"], {
-      encoding: "utf8",
-    }).stdout?.trim();
-const chrome = [...chromeCandidates, fromPath].find((candidate) => candidate && existsSync(candidate));
-if (!chrome) throw new Error("Chrome not found; set NODEGRAPH_CHROME for the rendered demo gate");
-
-class Cdp {
-  constructor(url) {
-    this.ws = new WebSocket(url);
-    this.nextId = 1;
-    this.pending = new Map();
-    this.events = [];
-  }
-
-  async open() {
-    await new Promise((resolveOpen, reject) => {
-      this.ws.addEventListener("open", resolveOpen, { once: true });
-      this.ws.addEventListener("error", reject, { once: true });
-    });
-    this.ws.addEventListener("message", (event) => {
-      const message = JSON.parse(String(event.data));
-      if (message.id) {
-        const pending = this.pending.get(message.id);
-        this.pending.delete(message.id);
-        if (message.error) pending?.reject(new Error(message.error.message));
-        else pending?.resolve(message.result);
-      } else {
-        this.events.push(message);
-      }
-    });
-  }
-
-  call(method, params = {}) {
-    const id = this.nextId++;
-    return new Promise((resolveCall, reject) => {
-      this.pending.set(id, { resolve: resolveCall, reject });
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  close() {
-    this.ws.close();
-  }
+async function capture(name, errors, axe = false) {
+  const state = await page.evaluate(() => ({
+    title: document.title,
+    viewport: { width: innerWidth, height: innerHeight },
+    scrollWidth: document.documentElement.scrollWidth,
+    stage: (() => { const el = document.querySelector('[data-testid="nodegraph-canvas"]'); return { width: el?.clientWidth ?? 0, height: el?.clientHeight ?? 0 }; })(),
+    stats: document.querySelector("#stats")?.textContent,
+    text: document.body.innerText,
+    focused: document.activeElement?.getAttribute("data-testid"),
+    scenarios: [...document.querySelectorAll("#scenarios button")].map((b) => ({ text: b.textContent, pressed: b.getAttribute("aria-pressed"), disabled: b.disabled })),
+  }));
+  await page.screenshot({ path: resolve(out, `${name}.png`), fullPage: true });
+  await writeFile(resolve(out, `${name}.html`), await page.content());
+  const accessibility = axe ? await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze() : undefined;
+  await writeFile(resolve(out, `${name}.json`), JSON.stringify({ state, errors, accessibility }, null, 2));
+  proof.states.push({ name, width: state.viewport.width, scrollWidth: state.scrollWidth, errors: [...errors], axeViolations: accessibility?.violations.map((v) => v.id) ?? null });
+  assert.ok(state.scrollWidth <= state.viewport.width, `${name}: horizontal page overflow`);
+  assert.ok(state.stage.width > 0 && state.stage.height > 0, `${name}: graph has no visible area`);
+  assert.equal(errors.length, 0, `${name}: ${errors.join("; ")}`);
+  if (accessibility) assert.deepEqual(accessibility.violations.map((v) => v.id), [], `${name}: accessibility violations`);
 }
 
-// The same knob serve-demo.mjs reads; see probe-demo.mjs for why it matters.
-const demoPort = Number(process.env.NODEGRAPH_DEMO_PORT ?? 4173);
-const demoUrl = `http://127.0.0.1:${demoPort}`;
-
-const server = spawn(process.execPath, ["scripts/serve-demo.mjs"], {
-  cwd: root,
-  stdio: ["ignore", "pipe", "pipe"],
-  windowsHide: true,
-});
-// Wait for OUR server to announce itself, not for the port to answer; see
-// probe-demo.mjs. A held port kills the child and Chrome would then be driven
-// against the stranger holding it.
-const listening = new Promise((resolveReady, rejectReady) => {
-  server.stdout.once("data", resolveReady);
-  server.once("exit", (code) =>
-    rejectReady(new Error(`demo server exited (${code}) — port ${demoPort} is held by another process`)),
-  );
-  setTimeout(() => rejectReady(new Error("demo server never announced itself")), 10_000).unref();
-});
-const profile = mkdtempSync(resolve(tmpdir(), "nodegraph-live-"));
-let chromeProcess;
+async function newPage(width, reducedMotion = "no-preference") {
+  if (page) await page.context().close();
+  const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion });
+  page = await context.newPage();
+  page.setDefaultTimeout(15_000);
+  const errors = [];
+  page.on("pageerror", (e) => { if (errors.length < 30) errors.push((e.stack ?? e.message).slice(0, 3000)); });
+  page.on("console", (m) => { if (m.type() === "error" && errors.length < 30) errors.push(m.text().slice(0, 1000)); });
+  return errors;
+}
 
 try {
-  await listening;
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    try {
-      const response = await fetch(demoUrl, {
-        signal: AbortSignal.timeout(1_000),
-      });
-      if (response.ok) break;
-    } catch {
-      if (attempt === 29) throw new Error("demo server did not become reachable");
-      await wait(100);
+  browser = await chromium.launch({ headless: true });
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    const errors = await newPage(width);
+    await page.goto(server.url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await check(page.getByTestId("nodegraph")).toBeVisible();
+    await check(page.locator("#stats")).toContainText("142 entities");
+    if (width === 390) {
+      // Real application panels hide without unmounting while events arrive.
+      // This formerly threw from resize and removed the entire React tree.
+      await page.getByTestId("nodegraph").evaluate((el) => { el.style.display = "none"; });
+      await page.waitForTimeout(250);
+      assert.equal(await page.getByTestId("nodegraph-canvas").evaluate((el) => el.clientWidth), 0);
+      await page.getByTestId("nodegraph").evaluate((el) => { el.style.removeProperty("display"); });
+      await check(page.getByTestId("nodegraph")).toBeVisible();
+      await capture("panel-reopened-390", errors);
     }
-  }
+    await capture(`gallery-${width}`, errors, true);
 
-  const debugUrl = await new Promise((resolveDebug, reject) => {
-    chromeProcess = spawn(
-      chrome,
-      [
-        "--headless=new",
-        "--window-size=1280,900",
-        "--remote-debugging-port=0",
-        `--user-data-dir=${profile}`,
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-gpu-sandbox",
-        demoUrl,
-      ],
-      { stdio: ["ignore", "ignore", "pipe"], windowsHide: true },
-    );
-    const timeout = setTimeout(() => reject(new Error("Chrome CDP endpoint timed out")), 10_000);
-    chromeProcess.stderr.on("data", (chunk) => {
-      const match = String(chunk).match(/DevTools listening on (ws:\/\/[^\s]+)/);
-      if (match) {
-        clearTimeout(timeout);
-        resolveDebug(match[1]);
+    // A keyboard-only reviewer reaches the same measurements as a mouse user.
+    const evidence = page.locator('[data-filter-type="evidence"]');
+    await evidence.uncheck();
+    await check(page.getByTestId("nodegraph").locator("header")).toContainText("0 of");
+    await evidence.check();
+    await page.getByTestId("nodegraph-fit").click();
+    await page.getByRole("button", { name: "Unknown vs zero", exact: true }).click();
+    await check(page.locator("#stats")).toContainText("2 entities");
+    const stage = page.getByTestId("nodegraph-canvas");
+    await stage.focus();
+    const counts = [];
+    for (let n = 0; n < 2; n++) {
+      await stage.press("ArrowRight");
+      await check(page.getByTestId("nodegraph-selection")).toBeVisible();
+      counts.push(await page.getByTestId("count-readout").innerText());
+    }
+    assert.deepEqual(counts.sort(), ["0", "unknown — not measured"].sort());
+    await capture(`keyboard-${width}`, errors);
+    await stage.press("Escape");
+    await check(page.getByTestId("nodegraph-selection")).toHaveCount(0);
+
+    // Invalid incoming evidence must leave the accepted pair visible and let
+    // the reader switch scenarios to recover without reloading the application.
+    await page.getByRole("button", { name: "Refused batch", exact: true }).click();
+    await check(page.getByRole("alert")).toContainText("last accepted state");
+    await check(page.locator("#stats")).toContainText("2 entities · 1 edges");
+    await capture(`refused-${width}`, errors);
+    await page.getByRole("button", { name: "Calm by contract", exact: true }).click();
+    await check(page.getByRole("alert")).toHaveCount(0);
+    await check(page.locator("#stats")).toContainText("2 entities");
+    if (width === 1440) {
+      // Each effect resize clears a frame. Poll the actual overlay instead of
+      // taking a single sample that can land between clear and paint.
+      const pressCalm = () => page.getByRole("button", { name: "Calm by contract", exact: true }).click();
+      for (let repeat = 0; repeat < 2; repeat++) {
+        await pressCalm();
+        let brightestLit = 0;
+        await check.poll(async () => {
+          brightestLit = Math.max(brightestLit, await page.evaluate(litPixels));
+          return brightestLit;
+        }, { timeout: 5000, intervals: [80, 80, 100] }).toBeGreaterThan(0);
+        await capture(`motion-${repeat}`, errors);
+        // Stillness must span multiple frames. A single clear/paint gap during
+        // ingestion is zero too, and is not evidence that the window ended.
+        let calm = [];
+        await check.poll(async () => {
+          calm = [];
+          for (let n = 0; n < 5; n++) { await page.waitForTimeout(120); calm.push(await page.evaluate(litPixels)); }
+          return calm.every((value) => value === 0);
+        }, { timeout: 8000 }).toBe(true);
+        proof.motion.push({ repeat, brightestLit, calm });
       }
-    });
-    chromeProcess.once("error", reject);
-  });
-
-  const port = new URL(debugUrl).port;
-  let target;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const targets = await fetch(`http://127.0.0.1:${port}/json/list`, {
-      signal: AbortSignal.timeout(1_000),
-    }).then((response) => response.json());
-    target = targets.find((item) => item.type === "page" && item.url.includes(`127.0.0.1:${demoPort}`));
-    if (target) break;
-    await wait(100);
-  }
-  if (!target) throw new Error("demo page target did not appear");
-
-  const cdp = new Cdp(target.webSocketDebuggerUrl);
-  await cdp.open();
-  await cdp.call("Runtime.enable");
-  await cdp.call("Page.enable");
-  await cdp.call("Emulation.setDeviceMetricsOverride", {
-    width: 1280,
-    height: 900,
-    deviceScaleFactor: 1,
-    mobile: false,
-  });
-  const evaluate = async (expression) => {
-    const result = await cdp.call("Runtime.evaluate", {
-      expression,
-      returnByValue: true,
-      awaitPromise: true,
-    });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
-    return result.result.value;
-  };
-  const pixelSample = () => evaluate(`(() => {
-    const canvas = document.querySelector('[data-testid="cinematic-layer"]');
-    if (!canvas) return { lit: -1, nodes: 0 };
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let lit = 0;
-    for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) lit += 1;
-    return {
-      lit,
-      nodes: document.querySelectorAll('[data-testid="nodegraph"] canvas').length,
-    };
-  })()`);
-
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (await evaluate("Boolean(document.querySelector('[data-testid=\"nodegraph\"]'))")) break;
-    if (attempt === 39) throw new Error("NodeGraph did not mount");
-    await wait(100);
-  }
-
-  // The page opens on "Dense constellation", which streams for ~6s. That is
-  // the frame the README's mid-ingestion screenshot is supposed to show, so
-  // photograph it here — and do NOT try to measure stillness against it: every
-  // event extends the live window, so a scenario that is still streaming has
-  // not yet earned its decay. (Before this rewrite the gate sampled "decay" at
-  // 5.6s into that stream and read 87,317 lit pixels, which was the demo
-  // working, not failing.)
-  // Wait for a CONDITION, not a clock: the page's own entity counter passing
-  // 30 means the stream is genuinely mid-flight, so the live window is open and
-  // there are nodes to breathe. Sampling at a fixed 900ms read 0 lit pixels on
-  // a slow load — the assertion was measuring the machine, not the renderer.
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    const entities = await evaluate(
-      "Number((document.querySelector('#stats')?.textContent ?? '0').split(' ')[0])",
-    );
-    if (entities >= 30) break;
-    if (attempt === 59) throw new Error("dense constellation never reached 30 entities");
-    await wait(100);
-  }
-  // session.stats() is the only thing that also discloses the LIMITS, and a
-  // bounded store that evicts without saying so is indistinguishable from data
-  // loss. This fails the moment the readout stops naming the cap.
-  const boundsDisclosed = /bounded at \d+\/\d+/.test(
-    await evaluate("document.querySelector('#stats')?.textContent ?? ''"),
-  );
-  // Take the BRIGHTEST of several samples. Every ingestion re-runs the overlay
-  // effect, and re-running it resizes (therefore clears) the canvas one frame
-  // before the next paint — so a single sample during a fast stream reads 0
-  // roughly one time in five. Measured: 111935, 117493, 0, 118256 on four
-  // single-sample runs of the same unchanged code. Several samples spanning
-  // more than one frame cannot all land in that gap, and a genuinely dead
-  // overlay still reads 0 in all of them.
-  const brightestLit = async (samples) => {
-    let lit = 0;
-    for (let index = 0; index < samples; index += 1) {
-      lit = Math.max(lit, (await pixelSample()).lit);
-      await wait(60);
+      await page.getByRole("button", { name: "Bounded memory", exact: true }).click();
+      await check(page.locator("#stats")).toContainText("at capacity, oldest-inserted evicted first");
+      await page.waitForTimeout(9000);
+      await check(page.locator("#stats")).toContainText("60 entities");
+      await capture("bounded-stream", errors);
     }
-    return { lit };
-  };
-  const denseLive = await brightestLit(5);
-  const screenshot = await cdp.call("Page.captureScreenshot", {
-    format: "png",
-    fromSurface: true,
-    captureBeyondViewport: true,
-  });
-  writeFileSync(
-    resolve(root, "media", "standalone-demo-mid-ingestion.png"),
-    Buffer.from(screenshot.data, "base64"),
-  );
-
-  // Live-then-still is measured against ONE known ingestion instead of a
-  // wall-clock guess. "Calm by contract" sends a single event at 300ms, so its
-  // live window closes at ~3.5s: sample inside it twice, then well past it.
-  // Picking the chip by its visible name is exactly how a reader triggers one.
-  const pressCalm = () =>
-    evaluate(`[...document.querySelectorAll('#scenarios button')]
-      .find((button) => button.textContent === 'Calm by contract')
-      .click()`);
-
-  await pressCalm();
-  await wait(900);
-  const initialLive = await pixelSample();
-  await wait(900);
-  const expandedLive = await pixelSample();
-  await wait(3_800);
-  const initialDecay = await pixelSample();
-
-  // Press it again: the window must REOPEN and then close again.
-  await pressCalm();
-  await wait(1_900);
-  const replayLive = await pixelSample();
-  await wait(3_500);
-  const replayDecay = await pixelSample();
-
-  const browserErrors = cdp.events.filter(
-    (event) =>
-      event.method === "Runtime.exceptionThrown" ||
-      (event.method === "Runtime.consoleAPICalled" && event.params?.type === "error"),
-  );
-  const proof = {
-    boundsDisclosed,
-    denseLive: denseLive.lit,
-    initialLive: initialLive.lit,
-    expandedLive: expandedLive.lit,
-    initialDecay: initialDecay.lit,
-    replayLive: replayLive.lit,
-    replayDecay: replayDecay.lit,
-    browserErrors: browserErrors.length,
-  };
-  if (
-    !proof.boundsDisclosed ||
-    proof.denseLive <= 0 ||
-    proof.initialLive <= 0 ||
-    proof.expandedLive <= 0 ||
-    proof.initialDecay !== 0 ||
-    proof.replayLive <= 0 ||
-    proof.replayDecay !== 0 ||
-    proof.browserErrors !== 0
-  ) {
-    throw new Error(`rendered demo proof failed: ${JSON.stringify(proof)}`);
   }
-  process.stdout.write(`${JSON.stringify(proof)}\n`);
-  cdp.close();
+  const reducedErrors = await newPage(390, "reduce");
+  await page.goto(server.url, { waitUntil: "domcontentloaded" });
+  await check(page.getByTestId("nodegraph")).toBeVisible();
+  await page.getByRole("button", { name: "Calm by contract", exact: true }).click();
+  await check(page.locator("#stats")).toContainText("2 entities");
+  for (let n = 0; n < 8; n++) {
+    assert.equal(await page.evaluate(litPixels), 0);
+    await page.waitForTimeout(100);
+  }
+  await capture("reduced-motion-390", reducedErrors, true);
+
+  // Deliberate failed module request: the page must tell the user how to
+  // recover. Remove the interception before pressing the real retry button.
+  const failureErrors = await newPage(390);
+  await page.route("**/dist/react.js", (route) => route.abort("failed"));
+  await page.goto(server.url, { waitUntil: "domcontentloaded" });
+  await check(page.getByRole("alert")).toContainText("Unable to load the renderer");
+  assert.equal(await page.getByTestId("nodegraph").count(), 0);
+  await page.screenshot({ path: resolve(out, "module-failure.png"), fullPage: true });
+  await writeFile(resolve(out, "module-failure.html"), await page.content());
+  const failureAxe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  await writeFile(resolve(out, "module-failure.json"), JSON.stringify({ expectedBlockedModule: "/dist/react.js", errors: failureErrors, accessibility: failureAxe }, null, 2));
+  assert.deepEqual(failureAxe.violations.map((v) => v.id), []);
+  await page.unroute("**/dist/react.js");
+  failureErrors.length = 0;
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await check(page.getByTestId("nodegraph")).toBeVisible();
+  await check(page.locator("#stats")).toContainText("142 entities");
+  await capture("module-recovered", failureErrors);
+
+  if (process.argv.includes("--compose")) {
+    compose = await startDemoServer({ root: resolve(root, "..") });
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      const errors = await newPage(width);
+      await page.goto(`${compose.url}/examples/compose/index.html`, { waitUntil: "domcontentloaded" });
+      await check(page.getByTestId("nodegraph")).toBeVisible();
+      await check(page.locator("#stats")).toContainText("model: 54 nodes, 102 edges");
+      await check(page.locator("#stats")).toContainText("input to renderer: 54 entities, 102 relationships");
+      // The 102 semantic edges map to 96 unique undirected traversal pairs;
+      // the input counter must not call them 102 rendered relationships.
+      await check(page.getByTestId("nodegraph").locator("header")).toContainText("54 entities · 96 of 96 relationships shown");
+      await check(page.locator('[data-filter-type="traversal"]')).toBeChecked();
+      assert.equal(await page.locator('[data-filter-type="evidence"]').count(), 0);
+      await page.getByTestId("nodegraph-canvas").press("ArrowRight");
+      await check(page.getByTestId("count-readout")).toHaveText("unknown — not measured");
+      await capture(`compose-${width}`, errors, true);
+    }
+  }
+  proof.status = "PASS";
+} catch (error) {
+  proof.status = "FAIL";
+  proof.failures.push(error.stack ?? String(error));
+  if (page && !page.isClosed()) {
+    await page.screenshot({ path: resolve(out, "failure.png"), fullPage: true }).catch(() => {});
+    await writeFile(resolve(out, "failure.html"), await page.content()).catch(() => {});
+  }
+  process.exitCode = 1;
 } finally {
-  await stop(chromeProcess);
-  await stop(server);
-  try {
-    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-  } catch {
-    // Chrome's own child processes can still hold handles inside the profile
-    // after the launcher exits — on Windows this throws EBUSY even after the
-    // five built-in retries, and it did: a run that had already printed a
-    // PASSING proof exited 1 from here. The profile is a disposable directory
-    // under the OS temp dir, so failing to unlink it is not the gate's verdict.
-    process.stdout.write(`left temp Chrome profile behind: ${profile}\n`);
-  }
+  // Playwright owns browser/profile teardown; never delete a profile while
+  // Chrome may still hold its files. All HTTP servers are closed and awaited.
+  const closed = await Promise.allSettled([browser?.close(), compose?.close(), server.close()]);
+  proof.resourcesClosed = closed.every((result) => result.status === "fulfilled");
+  if (!proof.resourcesClosed) { proof.status = "FAIL"; process.exitCode = 1; proof.failures.push("owned resource teardown failed"); }
+  await writeFile(resolve(out, "RESULT.json"), JSON.stringify(proof, null, 2));
+  console.log(JSON.stringify({ status: proof.status, states: proof.states.length, resourcesClosed: proof.resourcesClosed, out, failures: proof.failures }));
 }

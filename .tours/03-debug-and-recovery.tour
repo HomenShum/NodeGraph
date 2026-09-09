@@ -33,31 +33,31 @@
     },
     {
       "file": "render/scripts/probe-demo.mjs",
-      "line": 56,
+      "line": 23,
       "pattern": "scenarioRail:",
       "title": "A gate that outlived the thing it was checking",
       "description": "This line used to assert the page contained the string 'Add another live branch' — a button that the ten-scenario gallery deleted. `npm run verify:demo` therefore exited 1 on every fresh clone, and both READMEs told first-time readers to press it. Lesson for the next reader: when you delete a control, grep the gates."
     },
     {
       "file": "render/scripts/browser-demo-gate.mjs",
-      "line": 218,
-      "pattern": "const brightestLit =",
-      "title": "Why the pixel check samples five times",
-      "description": "Each ingestion re-runs the overlay effect, and re-running it resizes (therefore clears) the canvas one frame before the next paint. A single sample during a fast stream read 0 about one run in five. The measured numbers are in the comment. Take the brightest of several; a genuinely dead overlay still reads 0 in all of them."
+      "line": 117,
+      "pattern": "let brightestLit =",
+      "title": "Observe live pixels across frames",
+      "description": "A canvas resize clears one frame before repainting. Poll for a lit frame, then require a sustained window of zero pixels; a single zero sample is not stillness."
     },
     {
       "file": "render/scripts/browser-demo-gate.mjs",
-      "line": 241,
+      "line": 114,
       "pattern": "const pressCalm =",
       "title": "Wait for a condition, not a clock",
-      "description": "'Calm by contract' sends exactly one event, so its live window closes at a knowable moment — that is why the live-then-still assertion is measured against it twice instead of against whatever the page happened to be doing. The earlier version timed its 'decay' sample into the middle of a still-streaming scenario and read 87,317 lit pixels: the demo working, reported as failing."
+      "description": "Replay the single-event scenario twice. Each run must paint during ingestion and then remain still across five samples after its live window closes."
     },
     {
       "file": "render/scripts/browser-demo-gate.mjs",
-      "line": 296,
-      "pattern": "Chrome's own child processes",
-      "title": "Cleanup must not overwrite the verdict",
-      "description": "Chrome's child processes keep handles inside the temp profile; on Windows this `rmSync` threw EBUSY even after five retries, turning a run that had already printed a PASSING proof into exit 1. A disposable temp directory is not the gate's verdict."
+      "line": 198,
+      "pattern": "Playwright owns browser/profile",
+      "title": "Await owned resource closure",
+      "description": "Playwright closes its browser/profile and the gate awaits both HTTP servers. A teardown failure makes the command fail. Evidence goes to a fresh untracked directory, so no tracked screenshot is overwritten."
     },
     {
       "file": "promotion/scripts/prove-edge-grammar.mjs",

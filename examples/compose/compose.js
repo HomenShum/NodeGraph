@@ -1,10 +1,9 @@
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 // The specific module, not the barrel: dist/index.js re-exports React detail
 // panels that import lucide-react, which a graph-only consumer neither has
 // nor wants (the audit's finding #6 — a curated index is the real fix).
 import { buildSemanticGraph } from "../../dist/semanticGraph.js";
-import { GraphSession } from "../../render/dist/index.js";
 import { NodeGraph } from "../../render/dist/react.js";
 
 // 1. The MODEL layer builds a semantic graph from a small research room:
@@ -74,33 +73,23 @@ const model = buildSemanticGraph({
 //    width channel. Its refs carry a sourceUrl but no release, so nothing
 //    can claim an assertion badge either. Everything renders as traversal —
 //    the trust grammar refusing to over-promise is the point of the demo.
-const session = new GraphSession({ maxNodes: 400, maxEdges: 900, maxSeen: 2000 });
-session.ingest(
-  {
-    entities: model.nodes.map((n) => ({ id: n.id, type: n.kind, label: n.label })),
-    relationships: model.edges.map((e) => ({
-      source: e.source,
-      target: e.target,
-      type: "traversal",
-    })),
-  },
-  { eventId: "compose:company-research" },
-);
+// This model already owns stable identity. GraphSession normalizes streamed
+// entities by kind + label, which collapsed 54 model nodes into 46 here.
+// Pass the complete static snapshot directly so distinct source IDs survive.
+const snap = {
+  nodes: model.nodes.map((n) => ({ id: n.id, type: n.kind, label: n.label })),
+  edges: model.edges.map((e) => ({ source: e.source, target: e.target, type: "traversal", weight: 1 })),
+};
 
 // 3. The VIEW layer draws it.
 function App() {
-  const snap = useSyncExternalStore(
-    (l) => session.subscribe(l),
-    () => session.getSnapshot(),
-    () => session.getSnapshot(),
-  );
   const stats = document.querySelector("#stats");
   if (stats) {
     stats.textContent =
       `model: ${model.stats.nodes} nodes, ${model.stats.edges} edges, ` +
-      `${model.stats.backedFacts} backed facts · rendered: ${snap.nodes.length} entities, ` +
-      `${snap.edges.length} relationships (all traversal — no count was measured, ` +
-      `no release-stamped receipt exists)`;
+      `${model.stats.backedFacts} backed facts · input to renderer: ${snap.nodes.length} entities, ` +
+      `${snap.edges.length} relationships. The panel groups repeated undirected pairs. ` +
+      `All edges are traversal: no count was measured and no release-stamped receipt exists.`;
   }
   return React.createElement(NodeGraph, {
     nodes: snap.nodes,

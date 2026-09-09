@@ -15,17 +15,18 @@ stillness at each end is the trust grammar, not an edit.*
 
 ```sh
 git clone https://github.com/HomenShum/NodeGraph
-cd NodeGraph/render && npm install && npm run demo
+cd NodeGraph/render && npm ci && npm run demo
 ```
 
 Open <http://127.0.0.1:4173>. The page opens on **Dense constellation**, the
-142-entity scenario, already streaming in. Above the stage is a row of ten
+142-entity scenario, already streaming in. Above the stage is a row of eleven
 scenario chips — press any of them to replay that scenario from an empty
 session and watch the ingestion-window lightning again. **Unknown vs zero**
 shows the two absence states rendering differently; **Evidence lands** shows a
 measured edge arriving; **Assertion chain** shows fully receipted Reactome
-claims in violet. (Measured from a fresh clone: `npm install` 8s, the server
-answers immediately after.)
+claims in violet. `npm run demo` builds the renderer before starting the
+server, including after a fresh install. The gallery loads its runtime
+dependencies from esm.sh, so its first load needs network access.
 
 Not yet on npm — until the `@homenshum/nodegraph-live` publish lands, consume
 it by vendoring `src/` or a `file:` dependency; `dist/` builds with
@@ -224,16 +225,23 @@ how you re-open the ingestion-window lightning.
 
 ![Standalone demo during a live ingestion window](media/standalone-demo-mid-ingestion.png)
 
-The scenario suite uses Node's built-in test runner, so no test framework is
-added:
+The scenario and server suites use Node's built-in test runner. The browser
+gate uses Playwright and axe and saves screenshots, DOM, accessibility results,
+and its verdict under `.proofloop/viewer-*`; it does not replace tracked media.
 
 ```sh
 npm test
 npm run typecheck
+npx playwright install chromium
 npm run verify:demo
 npm audit
 npm pack --dry-run
 ```
+
+The `.` and `./core` exports work in Node. The `./react` export is a browser
+component and requires WebGL; server-rendered hosts must load it on the client.
+The root `npm run verify:packages -- --browser` command tests the actual packed
+exports in a separate consumer, including NodeNext declarations and browser rendering.
 
 ## MCP: any agent becomes a graph author
 

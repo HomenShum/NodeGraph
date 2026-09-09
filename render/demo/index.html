@@ -54,6 +54,9 @@
          reflow its own digits. */
       #stats { color: #8b949d; font-size: 12px; margin-top: 4px; font-variant-numeric: tabular-nums; }
       #boot { margin: 0; padding: 16px; color: #8b949d; font-size: 12.5px; }
+      #boot button { display: block; margin-top: 8px; min-height: 32px; padding: 4px 14px;
+        border: 1px solid #3d7bd9; border-radius: 6px; background: #1d2a3a; color: #e8f1fa; cursor: pointer; }
+      #scenarios button:disabled { opacity: 0.55; cursor: default; }
     </style>
     <script type="importmap">
       {
@@ -109,6 +112,19 @@
       <p id="caption"></p>
       <p id="stats"></p>
     </main>
-    <script type="module" src="/demo/demo.js"></script>
+    <script type="module">
+      import("/demo/demo.js").catch(() => {
+        const boot = document.querySelector("#boot");
+        if (!boot) return;
+        boot.setAttribute("role", "alert");
+        boot.textContent = "Unable to load the renderer. Check your connection, then try again. ";
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = "Try again";
+        retry.addEventListener("click", () => location.reload());
+        boot.append(retry);
+        document.querySelectorAll("#scenarios button").forEach((button) => { button.disabled = true; });
+      });
+    </script>
   </body>
 </html>
