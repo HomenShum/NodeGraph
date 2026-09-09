@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +13,10 @@ mkdirSync(artifacts, { recursive: true });
 const out = mkdtempSync(resolve(artifacts, "packages-"));
 // Outside the repository: a missing dependency cannot resolve through this
 // checkout's node_modules and turn a broken tarball into a false pass.
-const consumer = mkdtempSync(resolve(tmpdir(), "nodegraph-consumer-"));
+// Windows runners expose TEMP through an 8.3 alias. Vite resolves one copy
+// but keys its inline-module cache with the other unless the root is canonical.
+const temporaryRoot = realpathSync(tmpdir());
+const consumer = mkdtempSync(resolve(temporaryRoot, "nodegraph-consumer-"));
 const npmCli = process.env.npm_execpath;
 assert.ok(npmCli, "Run through npm run verify:packages so npm's CLI path is explicit");
 let sequence = 0;
@@ -81,6 +84,6 @@ try {
   writeFileSync(resolve(out, "RESULT.json"), JSON.stringify({ status: "PASS", packages, consumer, coreRuntimeAndPublicTypes: true, reactBrowserBundle: true, browserStates }, null, 2));
   console.log(JSON.stringify({ status: "PASS", out }));
 } finally {
-  assert.ok(consumer.startsWith(resolve(tmpdir()) + sep + "nodegraph-consumer-"));
+  assert.ok(consumer.startsWith(temporaryRoot + sep + "nodegraph-consumer-"));
   rmSync(consumer, { recursive: true });
 }
