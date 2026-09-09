@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Packed NodeGraph handoff</title></head>
+<body style="margin:16px;font-family:system-ui"><main><h1>Packed NodeGraph handoff</h1><div id="root"></div></main>
+<script type="module">
+  import React from "react";
+  import { createRoot } from "react-dom/client";
+  import { buildSemanticGraph } from "@homenshum/nodegraph";
+  import { GraphSession } from "@homenshum/nodegraph-live/core";
+  import { NodeGraph } from "@homenshum/nodegraph-live/react";
+  const actor = { kind: "user", id: "reviewer", name: "Reviewer" };
+  const model = buildSemanticGraph({ roomId: "handoff", artifacts: [{
+    id: "note", roomId: "handoff", kind: "note", title: "Supplier review", version: 1, createdBy: actor, updatedAt: 1,
+    order: ["finding"], elements: { finding: { id: "finding", value: { text: "Supplier evidence needs review." }, version: 1, updatedBy: actor, updatedAt: 1 } },
+  }] });
+  const session = new GraphSession();
+  session.ingest({ entities: model.nodes.map((n) => ({ id: n.id, type: n.kind, label: n.label })), relationships: model.edges.map((e) => ({ source: e.source, target: e.target, type: "traversal" })) });
+  const snapshot = session.getSnapshot();
+  createRoot(document.getElementById("root")).render(React.createElement(NodeGraph, { nodes: snapshot.nodes, edges: snapshot.edges }));
+</script></body></html>

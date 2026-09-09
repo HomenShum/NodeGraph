@@ -302,9 +302,14 @@ const drift = buttons.length !== SCENARIOS.length
 if (drift) throw new Error(`scenario chips have drifted from demo.js: ${drift}`);
 buttons.forEach((b, i) => {
   const s = SCENARIOS[i];
+  b.setAttribute("aria-pressed", "false");
   b.addEventListener("click", () => {
-    for (const other of buttons) other.classList.remove("active");
+    for (const other of buttons) {
+      other.classList.remove("active");
+      other.setAttribute("aria-pressed", "false");
+    }
     b.classList.add("active");
+    b.setAttribute("aria-pressed", "true");
     caption.textContent = s.caption;
     s.run();
   });

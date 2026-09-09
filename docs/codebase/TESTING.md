@@ -4,21 +4,23 @@
 
 ```sh
 # both layers at once (repo root) — start here
-npm run test:all         # 14 vitest + 11 node:test + docs:check, ~15s, offline
+npm run test:all         # model + renderer/server tests + docs:check, offline
 
 # model layer (repo root)
 npm test                 # vitest, 14 tests, ~1s, offline
 npm run typecheck        # tsc --noEmit over src, tests, examples/showcase
-npm run build            # tsc, then loads dist/index.js through Node's resolver
-npm run docs:check       # 34 tour steps and 38 doc citations, each against the
+npm run build            # tsc emits the model package
+npm run verify:packages  # pack/install both packages outside this checkout; exercise public APIs and declarations
+npm run docs:check       # tour steps and doc citations, each against the
                          # line's CONTENT, not just its number
 npm run example:build    # vite production build of the showcase
 
 # view layer
 cd render
-npm test                 # node --test, 11 tests, ~0.3s, builds first, offline
+npm test                 # node --test, builds first, offline
 npm run typecheck
-npm run verify:demo      # ~35s: serves the demo, drives it in headless Chrome
+npx playwright install chromium
+npm run verify:demo      # gallery, responsive interaction, refusal/recovery, axe and bounded motion
 node mcp/client-demo.mjs # ~1s: real JSON-RPC session against the MCP server
 
 # whole-product proof (repo root, needs Chromium via playwright)
@@ -31,9 +33,15 @@ the running product lives. It goes green while the view layer is untested, so it
 reads like a whole suite and is not one. **`npm run test:all` is the command that
 covers both**; it exits non-zero if either layer or the doc-pointer guard fails.
 
-The browser gates take a port: `NODEGRAPH_DEMO_PORT=4608 npm run verify:demo`.
-Use it when 4173 might already be held — a gate that finds the port taken grades
-whatever is listening, which has already happened here once.
+`verify:demo` uses an OS-assigned localhost port and awaits closure of its owned
+server and Playwright browser. `NODEGRAPH_DEMO_PORT` still sets the interactive
+demo server's port. Browser artifacts go to `render/.proofloop/viewer-*`.
+
+From the root, `npm run verify:packages -- --browser` also renders the packed
+React export, while `npm --prefix render run verify:demo -- --compose` checks
+the source composition example. Install Playwright Chromium in both packages
+first. The React export requires a browser; core/model imports and declarations
+are verified under Node's NodeNext module resolution without `skipLibCheck`.
 
 ## What each suite actually protects
 
@@ -45,6 +53,7 @@ whatever is listening, which has already happened here once.
 | `sustained-session.test.mjs` | 3 | The long-running case. A day-long stream stays bounded and evicts deterministically; eviction reaches the live render surface instead of leaving invisible stale state; an invalid capacity fails at construction rather than becoming an unbounded fallback. |
 | `edge-grammar.test.mjs` | 4 | That the three inks stay distinguishable in both themes, by CIEDE2000 and by greyscale contrast, and that an edge arriving later by patch keeps its class ink. It includes a **self-check of the CIEDE2000 implementation against Sharma's published reference pairs**, so a broken metric cannot silently pass the grammar. |
 | `seed-geometry.test.mjs` | 1 | That a streamed chain of births is never collinear. This exists because a real capture rendered 142 nodes as a straight line: the previous seed offset produced `dx === dy` for every birth, and force layout preserves collinearity it is handed. |
+| `demo-server.test.mjs` | 2 | Concurrent owned servers, port collision refusal, shutdown, malformed/private requests and repeated read bursts; the intended MCP event-log route remains readable. |
 
 ### `tests/` — the model layer
 
@@ -66,13 +75,15 @@ this repo's real defects were found.
   drives it in headless Chrome: the dense scenario is genuinely painting during
   ingestion, then "Calm by contract" is pressed twice and the overlay must go to
   **exactly zero lit pixels** after each live window closes, with zero console
-  errors. Also writes `render/media/standalone-demo-mid-ingestion.png`.
+  errors. Also checks keyboard measurements, filters, refused-batch recovery,
+  reduced motion, bounded ingestion and failed-module recovery at representative
+  widths. It preserves screenshots and raw axe findings under `.proofloop`.
 - **`npm run proof:edge-grammar`** — reads the edge colours out of the demo's own
   built bundle *in the page*, through the same `buildGraph` call the component
   makes on mount, and scores all six class pairs. Writes
   `promotion/evidence/edge-grammar/after/`.
 
-Both spawn and kill their own server on their own port. That is deliberate: an
+Both own their server and browser. That is deliberate: an
 earlier run of this repo's gate silently graded an 11-hour-old orphaned server
 from a previous session.
 
@@ -93,8 +104,8 @@ from a previous session.
 
 ## Known gaps
 
-- No accessibility audit (axe/Lighthouse) runs anywhere, and the graph surface
-  fails basic keyboard access today. See `CONCERNS.md`.
+- Axe and keyboard scenarios are partial accessibility evidence. Manual assistive
+  technology review and full product quality grades remain unverified.
 - No performance measurement of input latency during the 142-entity scenario.
 - The light theme's edge palette is measured by tests but never photographed:
   the demo page is dark-only.

@@ -1,59 +1,87 @@
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, realpathSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isAbsolute, extname, relative, resolve, sep } from "node:path";
+import { pipeline } from "node:stream";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-// Static file server for any page in this repo that is plain ESM plus an
-// import map, i.e. needs no bundler. Two optional arguments:
-//
-//   node scripts/serve-demo.mjs
-//     -> serves render/, open http://127.0.0.1:4173/
-//   node render/scripts/serve-demo.mjs . /examples/compose/index.html
-//     -> serves the repo root, open http://127.0.0.1:4173/examples/compose/index.html
-//
-// The second argument only decides which URL is printed; it does NOT remap "/",
-// because a page moved to "/" would resolve its own `./compose.js` against the
-// wrong directory. The root README's compose page needs the wider root because
-// it imports `dist/` from BOTH layers. Paths outside the served root are
-// refused below, so widening the root is a deliberate argument, never a default.
-const [rootArg, openArg] = process.argv.slice(2);
-const root = resolve(rootArg ?? fileURLToPath(new URL("../", import.meta.url)));
-const openPath = openArg ?? "/";
-const port = Number(process.env.NODEGRAPH_DEMO_PORT ?? 4173);
+const defaultRoot = fileURLToPath(new URL("../", import.meta.url));
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".jsonl": "application/x-ndjson; charset=utf-8",
   ".map": "application/json; charset=utf-8",
+  ".png": "image/png", ".jpg": "image/jpeg", ".gif": "image/gif",
+  ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm",
 };
 
-createServer((request, response) => {
-  const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-  // A trailing slash means a directory, and a directory means its index.html —
-  // without this, `/mcp/viewer/`, the URL PRODUCT_JOURNEYS J5 and the MCP
-  // README both tell the reader to open, resolves to a directory, fails the
-  // isFile check and 404s. That is why J5's browser half was never driven.
-  const relative =
-    pathname === "/"
-      ? "demo/index.html"
-      : pathname.endsWith("/")
-        ? `${pathname.slice(1)}index.html`
-        : pathname.slice(1);
-  const target = resolve(root, relative);
-  if (target !== root && !target.startsWith(`${root}${sep}`)) {
-    response.writeHead(403).end("forbidden");
-    return;
-  }
-  try {
-    if (!statSync(target).isFile()) throw new Error("not a file");
-    response.writeHead(200, {
-      "content-type": contentTypes[extname(target)] ?? "application/octet-stream",
-      "cache-control": "no-store",
-    });
-    createReadStream(target).pipe(response);
-  } catch {
-    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("not found");
-  }
-}).listen(port, "127.0.0.1", () => {
-  process.stdout.write(`NodeGraph demo: http://127.0.0.1:${port}${openPath}\n`);
-});
+// The verifier uses this exact HTTP handler on an OS-assigned port. It never
+// grades a pre-existing process or exposes the repository's private dotfiles.
+export async function startDemoServer({ root = defaultRoot, port = 0 } = {}) {
+  const servedRoot = realpathSync(root);
+  const server = createServer((request, response) => {
+    if (!["GET", "HEAD"].includes(request.method)) {
+      response.writeHead(405, { allow: "GET, HEAD" }).end("method not allowed");
+      return;
+    }
+    try {
+      const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
+      const name = pathname === "/" ? "demo/index.html"
+        : pathname.endsWith("/") ? `${pathname.slice(1)}index.html` : pathname.slice(1);
+      const parts = name.split(/[\\/]/);
+      // The MCP viewer deliberately tails this one accepted-event artifact.
+      // Other dotfiles, including credentials and Git metadata, remain private.
+      const eventLog = name === ".nodegraph/events.jsonl";
+      if ((!eventLog && parts.some((part) => part.startsWith(".") || part.includes(":"))) || !contentTypes[extname(name)]) {
+        response.writeHead(403).end("forbidden");
+        return;
+      }
+      const target = realpathSync(resolve(servedRoot, name));
+      const within = relative(servedRoot, target);
+      if (isAbsolute(within) || within.startsWith(`..${sep}`) || within === ".." || !statSync(target).isFile()) {
+        response.writeHead(403).end("forbidden");
+        return;
+      }
+      const stream = createReadStream(target);
+      stream.once("error", () => {
+        if (!response.headersSent) response.writeHead(404).end("not found");
+        else response.destroy();
+      });
+      stream.once("open", () => {
+        response.writeHead(200, {
+          "content-type": contentTypes[extname(target)],
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+        });
+        if (request.method === "HEAD") { stream.destroy(); response.end(); }
+        else pipeline(stream, response, () => {}); // pipeline destroys both ends on a read/write failure
+      });
+    } catch {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("not found");
+    }
+  });
+  server.requestTimeout = 10_000;
+  server.headersTimeout = 5_000;
+  server.keepAliveTimeout = 1_000;
+  await new Promise((ready, reject) => {
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", ready);
+  });
+  return {
+    url: `http://127.0.0.1:${server.address().port}`,
+    close: () => new Promise((done, reject) => {
+      server.close((error) => error ? reject(error) : done());
+      server.closeAllConnections();
+    }),
+  };
+}
+
+// The optional second argument only changes the printed URL; it does not
+// remap relative module paths. Compose needs the deliberately wider repo root.
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  const [rootArg, openArg] = process.argv.slice(2);
+  const server = await startDemoServer({ root: rootArg ?? defaultRoot, port: Number(process.env.NODEGRAPH_DEMO_PORT ?? 4173) });
+  process.stdout.write(`NodeGraph demo: ${server.url}${openArg ?? "/"}\n`);
+  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => void server.close());
+}

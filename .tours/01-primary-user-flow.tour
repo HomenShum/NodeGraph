@@ -5,24 +5,24 @@
   "steps": [
     {
       "file": "render/demo/index.html",
-      "line": 112,
-      "pattern": "src=\"/demo/demo\\.js\"",
+      "line": 116,
+      "pattern": "import\\(\"/demo/demo\\.js\"\\)",
       "title": "The entry point is a plain HTML page",
       "description": "No framework, no router, no bundler. React, Sigma and Graphology arrive through the import map above; this module script is the whole entry. That is the claim the demo exists to prove, and the cost is that first load needs network."
     },
     {
       "file": "render/scripts/serve-demo.mjs",
-      "line": 36,
-      "pattern": "const relative =",
-      "title": "Fifty lines of node:http instead of a static-server dependency",
-      "description": "`/` serves the demo page; anything resolving outside the served root gets 403 before a single stat call. The two optional arguments exist so the SAME server can host `examples/compose`, which lives above this package and imports `dist/` from both layers."
+      "line": 30,
+      "pattern": "const name =",
+      "title": "One owned localhost server for the demo and composition",
+      "description": "The same native HTTP handler serves both examples. It resolves real paths, refuses private files and escaping links, and serves the MCP accepted-event log explicitly. Verifiers bind an OS-assigned port and await shutdown."
     },
     {
       "file": "render/demo/demo.js",
-      "line": 305,
+      "line": 306,
       "pattern": "b\\.addEventListener\\(\"click\"",
       "title": "The primary user action",
-      "description": "Every user action in this app enters here. Pressing a chip clears the previous scenario's timers, marks the chip active, swaps the caption, and calls run(). Ten chips, ten stories about the same trust grammar."
+      "description": "Every user action in this app enters here. Pressing a chip clears the previous scenario's timers, marks the chip active, swaps the caption, and calls run(). Eleven chips, eleven stories about the same trust grammar."
     },
     {
       "file": "render/demo/demo.js",
@@ -89,7 +89,7 @@
     },
     {
       "file": "render/src/NodeGraph.tsx",
-      "line": 959,
+      "line": 989,
       "pattern": "data-testid=\"count-readout\"",
       "title": "The readout that closes the loop",
       "description": "Click a node and this is what a reader gets: the count, spelled 'unknown - not measured' when absent, and `visits` labelled in words as interaction frequency, not evidence strength. The receipt chips below carry source, release and a literal URL that replays the claim."

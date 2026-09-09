@@ -35,7 +35,7 @@ classes and their absence rules the **trust grammar**.
 | **Model** | repo root (`src/`) | Turns room artifacts (a sheet, an agent's sourced cells, traces, proposals) into a semantic graph a host app can store and sync. | `npm install && npm test` |
 
 They compose but neither imports the other. `examples/compose` is the proof:
-`npm run example:compose`.
+`npm ci && npm --prefix render ci && npm run example:compose`.
 
 **The steps below follow the VIEW layer**, because that is the running
 application. Steps 5b and 6b show where the model layer joins.
@@ -45,7 +45,7 @@ application. Steps 5b and 6b show where the model layer joins.
 ## Step 1 — The application entry and its "route"
 
 **File:** `render/demo/index.html`, served by `render/scripts/serve-demo.mjs`
-**Symbol:** the module script tag `<script type="module" src="/demo/demo.js">`
+**Symbol:** the module import `import("/demo/demo.js")`, with a visible loading-failure retry
 **Called by:** the browser, after `npm run demo` starts the static server
 **Calls next:** `render/demo/demo.js` top-level code
 
@@ -56,30 +56,21 @@ a plain HTML page with an import map that pulls React, Sigma and Graphology from
 bundler. It does mean the demo needs network on first load — 42 resources from
 two hosts.
 
-`serve-demo.mjs` is 50 lines of `node:http` because the repo refuses to add a
-static-server dependency for one page. It takes two optional arguments so the
+`serve-demo.mjs` uses `node:http` without a static-server dependency. It takes two optional arguments so the
 same server can also host `examples/compose`, which lives above `render/`.
 
 **Core code**
 
 ```js
-const [rootArg, openArg] = process.argv.slice(2);
-const root = resolve(rootArg ?? fileURLToPath(new URL("../", import.meta.url)));
-const relative = pathname === "/" ? "demo/index.html" : pathname.slice(1);
-const target = resolve(root, relative);
-if (target !== root && !target.startsWith(`${root}${sep}`)) {
-  response.writeHead(403).end("forbidden");
-  return;
-}
+const server = await startDemoServer({ root: rootArg ?? defaultRoot, port });
 ```
 
-**Input** — an HTTP GET for a path.
-**Output** — the file, or 403 for anything resolving outside the served root,
-or 404.
-**Failure behavior** — path traversal is refused before `statSync`, so a
-`..` escape returns 403 and a missing file returns 404. Verified:
-`curl --path-as-is 'http://127.0.0.1:4173/%2e%2e%2f%2e%2e%2fWindows/win.ini'`
-→ 404.
+**Input** — a localhost GET or HEAD request for a public demo asset.
+**Output** — the file, 404 for a missing/malformed request, or 403 for a
+private or escaping path. Other HTTP methods return 405.
+**Failure behavior** — real filesystem paths are checked before streaming,
+including linked directories. The MCP viewer's accepted-event log is the one
+explicit dotfile route. Verifiers use an OS-assigned port and await shutdown.
 **Next** — the page loads `demo/demo.js`, Step 2.
 
 ---
@@ -315,7 +306,7 @@ exactly which nodes, relationships and clusters changed, and
 
 **File:** `render/src/NodeGraph.tsx`
 **Symbol:** the patch `useEffect` (`render/src/NodeGraph.tsx:168`) and the
-cinematic overlay `useEffect` (`render/src/NodeGraph.tsx:525`)
+cinematic overlay `useEffect` (`render/src/NodeGraph.tsx:555`)
 **Called by:** React, when the session snapshot changes
 **Calls next:** `patchGraph` (`render/src/graph-model.ts:392`), then Sigma
 repaints itself

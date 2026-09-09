@@ -14,7 +14,7 @@ NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It
 | Layer | Where | What it owns | First win |
 |---|---|---|---|
 | **Model** | repo root (`src/`) | Artifacts, traces, proposals, sessions into an evidence-backed relationship graph | `npm install && npm test` |
-| **View** | [`render/`](render/) | Live typed-edge rendering: evidence / assertion / traversal edges never look alike, bounded ingestion motion, trust-grammar legend (extracted from TrialScope) | `cd render && npm install && npm run demo` -> http://127.0.0.1:4173 (measured: ~11s) |
+| **View** | [`render/`](render/) | Live typed-edge rendering: evidence / assertion / traversal edges never look alike, bounded ingestion motion, trust-grammar legend (extracted from TrialScope) | `cd render && npm ci && npm run demo` -> http://127.0.0.1:4173 |
 
 They compose — and [`examples/compose`](examples/compose) proves it in ~15
 lines: the model turns a research room (one sheet, an agent's sourced cells,
@@ -22,9 +22,13 @@ traces, a proposal) into 54 nodes and 102 edges; the renderer draws them
 under the trust grammar. Deliberately conservative: the model's relevance
 weight is not a measured count and its refs carry no release, so every
 relationship renders as traversal — the refusal is the demo.
+The view preserves all 54 source identities and groups the 102 semantic edges
+into 96 unique undirected traversal pairs; source direction and verbs remain
+in the model.
 
 ```bash
-npm install
+npm ci
+npm --prefix render ci
 npm run example:compose   # builds both layers, then serves the page
 ```
 
@@ -34,6 +38,34 @@ Open <http://127.0.0.1:4173/examples/compose/index.html>.
 
 Each layer keeps its own package.json, tests, and README; neither imports
 the other.
+
+## Verify a handoff
+
+Use Node 22 or 24. Install both packages with `npm ci` and
+`npm --prefix render ci`, then run:
+
+```sh
+npm run test:all
+npm run typecheck
+npm --prefix render run typecheck
+npm run example:build
+npm run verify:packages
+npm audit
+npm --prefix render audit
+```
+
+`verify:packages` builds tarballs and installs them outside this repository. It
+exercises the public model/core exports, NodeNext type declarations and a
+browser consumer bundle. For rendered evidence, install Chromium in both
+packages (`npx playwright install chromium`), then run
+`npm run verify:packages -- --browser` and
+`npm --prefix render run verify:demo -- --compose`.
+
+[CI](.github/workflows/ci.yml) runs the package checks on Windows/Linux with
+Node 22/24 and the browser checks on Linux. Artifacts record screenshots, DOM,
+axe findings and failures under `.proofloop/`. These checks do not certify a
+hosted deployment, search rankings or full product quality grades. This repo
+is a library; publishing or deploying a consuming application is a separate step.
 
 It is renderer-friendly rather than renderer-bound: the core graph derivation, filtering, selection, and layout functions are pure TypeScript. A compact React detail panel is included for apps that want the NodeRoom-style selection sidebar.
 
@@ -135,7 +167,7 @@ command covers both:
 
 ```bash
 # both layers (repo root, after installing in both)
-npm run test:all  # 14 vitest + 11 node:test + the doc-pointer guard
+npm run test:all  # 14 vitest + 13 node:test + the doc-pointer guard
 
 # model layer (repo root)
 npm install
@@ -147,7 +179,7 @@ npm run build
 cd render
 npm install
 npm run typecheck
-npm test          # node:test, 11 tests
+npm test          # node:test, 13 tests
 npm run verify:demo   # serves the demo, drives it in headless Chrome
 ```
 

@@ -17,13 +17,13 @@ TypeScript resolves `./graph-model.js` to `graph-model.ts`; Node then loads the
 emitted `graph-model.js` at runtime. Extensionless specifiers typecheck fine and
 then fail at runtime with `ERR_MODULE_NOT_FOUND`, which is why the model layer
 used to ship a 40-line post-build script that rewrote them. That script is gone.
-The guard that replaced it is one line:
+The packed-consumer guard now checks those public imports outside the checkout:
 
 ```
-npm run build   # postbuild imports dist/index.js through Node's own resolver
+npm run verify:packages   # builds, packs, installs, runs public APIs and checks declarations
 ```
 
-Add an extensionless specifier and the build fails with the exact missing path.
+An extensionless emitted import fails in the isolated consumer with the missing path.
 
 ## Naming
 

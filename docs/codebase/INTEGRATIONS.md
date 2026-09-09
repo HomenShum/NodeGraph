@@ -6,15 +6,13 @@ Everything this repository talks to, and what happens when it is unavailable.
 
 No API keys, no tokens, no database passwords, no `.env` file, and nothing to
 configure before `npm test` passes. The model layer is storage-neutral: it emits
-Cypher **text and parameters** and never opens a connection. Search the tree for
-`process.env` and you will find three variables, all optional and all listed
-below.
+Cypher **text and parameters** and never opens a connection. Browser and package verification need no provider credentials.
 
 ## Outbound network
 
 | Who | What | When | If it is unavailable |
 |---|---|---|---|
-| `esm.sh` | React 19, Sigma 3, Graphology 0.26 + forceatlas2, `@sigma/node-border`, via an import map | first load of `render/demo/index.html` and `examples/compose/index.html` | the demo page renders its heading and then nothing. **This is the most likely reason a fresh clone "does not work".** The library itself has no such dependency; only the bundler-free demo pages do. |
+| `esm.sh` | React 19, Sigma 3, Graphology 0.26 + forceatlas2, `@sigma/node-border`, via an import map | first load of `render/demo/index.html` and `examples/compose/index.html` | the gallery reports a loading failure and offers retry. The library itself has no such dependency; only the bundler-free demo pages do. |
 | `reactome.org` | nothing is fetched | never | the demo's receipt URLs point there so a reader can click through; they are data, not requests |
 
 Unit tests, typecheck and build are fully offline. `verify:demo` and
@@ -25,17 +23,16 @@ Unit tests, typecheck and build are fully offline. `verify:demo` and
 | Process | Started by | Port | Notes |
 |---|---|---|---|
 | static demo server | `render/scripts/serve-demo.mjs` | 4173, override with `NODEGRAPH_DEMO_PORT` | refuses any path resolving outside the served root |
-| headless Chrome | `render/scripts/browser-demo-gate.mjs`, `promotion/scripts/prove-edge-grammar.mjs` | ephemeral CDP port | found via `NODEGRAPH_CHROME` or the usual install paths; each gate spawns and kills its own |
+| headless Chromium | `render/scripts/browser-demo-gate.mjs` | owned Playwright browser | installed with `npx playwright install chromium`; teardown is awaited |
 | MCP stdio server | `render/mcp/server.mjs` | none, stdio | appends accepted events to `.nodegraph/events.jsonl` (git-ignored) |
 | NodeAgent bridge | `examples/streamlit/nodeagent_server.mjs` | 8787 | the Streamlit app calls `NODEGRAPH_NODEAGENT_URL`, defaulting to `http://127.0.0.1:8787/agent` |
 
 ## Environment variables
 
-All three are optional and none is required for tests or build.
+These are optional; no provider variable is required for tests or build.
 
 - `NODEGRAPH_DEMO_PORT` — port for the static demo server (default 4173).
-- `NODEGRAPH_CHROME` — absolute path to a Chrome/Chromium binary for the
-  browser gates.
+- `NODEGRAPH_CHROME` — legacy recording-script override; `verify:demo` uses its installed Playwright Chromium.
 - `NODEGRAPH_NODEAGENT_URL` — where the Streamlit example sends chat turns.
 
 ## Model Context Protocol

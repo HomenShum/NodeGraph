@@ -8,5 +8,6 @@ __pycache__/
 *.pyc
 .serena/
 .proofloop/
+.tmp-pack.json
 .DS_Store
 *.log
