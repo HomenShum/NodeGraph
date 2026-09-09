@@ -16,6 +16,12 @@ const contentTypes = {
   ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm",
 };
 
+function publicContentType(name, allowEventLog) {
+  const eventLog = allowEventLog && name === ".nodegraph/events.jsonl";
+  if (!eventLog && name.split(/[\\/]/).some((part) => part.startsWith(".") || part.includes(":"))) return undefined;
+  return contentTypes[extname(name)];
+}
+
 // The verifier uses this exact HTTP handler on an OS-assigned port. It never
 // grades a pre-existing process or exposes the repository's private dotfiles.
 export async function startDemoServer({ root = defaultRoot, port = 0 } = {}) {
@@ -29,17 +35,22 @@ export async function startDemoServer({ root = defaultRoot, port = 0 } = {}) {
       const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
       const name = pathname === "/" ? "demo/index.html"
         : pathname.endsWith("/") ? `${pathname.slice(1)}index.html` : pathname.slice(1);
-      const parts = name.split(/[\\/]/);
       // The MCP viewer deliberately tails this one accepted-event artifact.
       // Other dotfiles, including credentials and Git metadata, remain private.
       const eventLog = name === ".nodegraph/events.jsonl";
-      if ((!eventLog && parts.some((part) => part.startsWith(".") || part.includes(":"))) || !contentTypes[extname(name)]) {
+      if (!publicContentType(name, eventLog)) {
         response.writeHead(403).end("forbidden");
         return;
       }
       const target = realpathSync(resolve(servedRoot, name));
       const within = relative(servedRoot, target);
       if (isAbsolute(within) || within.startsWith(`..${sep}`) || within === ".." || !statSync(target).isFile()) {
+        response.writeHead(403).end("forbidden");
+        return;
+      }
+      const resolvedName = within.split(sep).join("/");
+      const contentType = publicContentType(resolvedName, eventLog);
+      if (!contentType || (eventLog && resolvedName !== name)) {
         response.writeHead(403).end("forbidden");
         return;
       }
@@ -50,7 +61,7 @@ export async function startDemoServer({ root = defaultRoot, port = 0 } = {}) {
       });
       stream.once("open", () => {
         response.writeHead(200, {
-          "content-type": contentTypes[extname(target)],
+          "content-type": contentType,
           "cache-control": "no-store",
           "x-content-type-options": "nosniff",
         });
