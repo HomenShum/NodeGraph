@@ -15,7 +15,7 @@ const out = mkdtempSync(resolve(artifacts, "packages-"));
 // checkout's node_modules and turn a broken tarball into a false pass.
 // Windows runners expose TEMP through an 8.3 alias. Vite resolves one copy
 // but keys its inline-module cache with the other unless the root is canonical.
-const temporaryRoot = realpathSync(tmpdir());
+const temporaryRoot = realpathSync.native(tmpdir());
 const consumer = mkdtempSync(resolve(temporaryRoot, "nodegraph-consumer-"));
 const npmCli = process.env.npm_execpath;
 assert.ok(npmCli, "Run through npm run verify:packages so npm's CLI path is explicit");
