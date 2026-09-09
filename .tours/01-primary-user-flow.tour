@@ -12,7 +12,7 @@
     },
     {
       "file": "render/scripts/serve-demo.mjs",
-      "line": 30,
+      "line": 36,
       "pattern": "const name =",
       "title": "One owned localhost server for the demo and composition",
       "description": "The same native HTTP handler serves both examples. It resolves real paths, refuses private files and escaping links, and serves the MCP accepted-event log explicitly. Verifiers bind an OS-assigned port and await shutdown."
