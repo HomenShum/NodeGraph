@@ -11,6 +11,8 @@
 <p align="center"><a href="docs/START_HERE.md">Code&nbsp;walkthrough</a> · <a href="https://homenshum.github.io/">All&nbsp;projects</a></p>
 <!-- brand:end -->
 
+# NodeGraph
+
 NodeGraph is a small TypeScript semantic graph layer extracted from NodeRoom. It turns room-like artifacts, spreadsheet rows, notebook blocks, evidence payloads, traces, proposals, sessions, and members into an evidence-backed relationship graph.
 
 > Not yet on npm. Until the `@homenshum/nodegraph` / `@homenshum/nodegraph-live`
