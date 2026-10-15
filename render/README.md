@@ -253,8 +253,27 @@ session (a research trail, one receipted claim accepted, one unreceipted
 claim refused) and exits nonzero if the boundary fails; `mcp/viewer/` tails
 the accepted-event log into the live rail.
 
+When an agent restarts with the same event file, the server restores its bounded
+session before reading requests. A changed retry is still refused; later valid
+findings can reach the viewer. Exact retries remain harmless to graph strength
+(each accepted call still appends a record). The existing 5,000-receipt FIFO
+window applies across restart; this is not permanent event-ID storage.
+
+The server streams the full history with a 1 MiB UTF-8 limit per record, including
+the final newline. New calls exceeding that limit are refused before session
+mutation. Startup has a 30-second I/O and cooperative replay budget; it cannot
+preempt synchronous JavaScript work. Malformed, conflicting, unknown, oversized
+or unterminated history stops startup with a nonzero exit. Preserve the original
+file for diagnosis; choose a new `--events` path for a separate session instead
+of silently dropping bad records. Existing poisoned files are not repaired.
+
+Use one writer per event file. This does not coordinate concurrent writers or
+guarantee atomic recovery from append failures. The viewer's existing disclosure
+for an already damaged log remains a separate limitation.
+
 ```sh
 node mcp/client-demo.mjs        # real MCP session; asserts the refusal
+node --test tests/mcp-restart.test.mjs # after building: real retained-file restart scenarios
 python -m http.server 4653      # then open /mcp/viewer/
 ```
 
