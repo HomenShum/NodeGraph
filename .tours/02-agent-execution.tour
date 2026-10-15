@@ -12,17 +12,17 @@
     },
     {
       "file": "render/mcp/server.mjs",
-      "line": 32,
+      "line": 83,
       "pattern": "const TOOLS = \\[",
       "title": "Tool registration is an array",
       "description": "Two tools, no registry abstraction and no plugin loader. Note where the invariant is written: in the tool DESCRIPTIONS. 'Never pass a count you did not measure' has to reach the model, because the model picks the arguments before any validator sees them."
     },
     {
       "file": "render/mcp/server.mjs",
-      "line": 82,
+      "line": 136,
       "pattern": "const call = \\(name, args\\)",
       "title": "Invocation: validate first, record second",
-      "description": "`session.observe(...)` runs BEFORE `record(...)`. That ordering is the whole design: a call the session refuses throws here, so nothing is appended to the event log and no downstream viewer ever sees it."
+      "description": "`record(...)` checks the encoded size, applies the shared GraphSession validator, then appends. Startup replays retained history through that same validator before reading requests, so a restarted agent still gets refused when it changes a remembered event ID."
     },
     {
       "file": "render/src/graph-model.ts",
@@ -40,7 +40,7 @@
     },
     {
       "file": "render/mcp/server.mjs",
-      "line": 121,
+      "line": 173,
       "pattern": "\\} catch \\(err\\)",
       "title": "The refusal goes back verbatim",
       "description": "The session's own error message is what the agent reads — 'receipt.release must be a non-empty string' — so the agent can correct itself rather than guessing. `isError: true`, and the event log is untouched."

@@ -159,7 +159,7 @@ mutates nothing. `requireEdgeType` refuses a fourth epistemic category outright.
 ## Step 4 — Agent orchestration: an agent doing the same thing over MCP
 
 **File:** `render/mcp/server.mjs`
-**Symbol:** the `createInterface` (`render/mcp/server.mjs:102`) JSON-RPC loop
+**Symbol:** the `createInterface` (`render/mcp/server.mjs:154`) JSON-RPC loop
 **Called by:** any MCP-speaking agent over stdio
 **Calls next:** `call(name, args)` → the same `GraphSession`
 
@@ -167,7 +167,9 @@ mutates nothing. `requireEdgeType` refuses a fourth epistemic category outright.
 The browser is not the only caller. An agent should be able to author the graph
 directly — and if it can, it must hit exactly the same validator, or the trust
 grammar would hold in the UI and leak everywhere else. So the MCP server holds a
-real `GraphSession` and lets it do the refusing.
+real `GraphSession` and lets it do the refusing. Before reading requests, it
+restores that session from the retained event log so a restart cannot forget a
+conflicting retry.
 
 There is no LLM, no planner and no agent framework in this repository. This step
 is the orchestration boundary; the agent lives outside.
@@ -203,8 +205,8 @@ refused: `MCP SESSION COMPLETE — boundary held`.
 ## Step 5 — Tool registration and invocation
 
 **File:** `render/mcp/server.mjs`
-**Symbol:** `TOOLS` (`render/mcp/server.mjs:32`) and `call`
-(`render/mcp/server.mjs:82`)
+**Symbol:** `TOOLS` (`render/mcp/server.mjs:83`) and `call`
+(`render/mcp/server.mjs:136`)
 **Called by:** the JSON-RPC loop, on `tools/list` and `tools/call`
 **Calls next:** `session.observe` / `session.assertEdge`
 
@@ -221,7 +223,6 @@ ever sees them.
 ```js
 const call = (name, args) => {
   if (name === "observe") {
-    session.observe(args.entities, args.measuredCount, { eventId: args.eventId });
     record("observe", { entities: args.entities, measuredCount: args.measuredCount, eventId: args.eventId });
     // ...
   }
@@ -233,8 +234,9 @@ const call = (name, args) => {
 **Input** — a tool name and arguments object.
 **Output** — a text summary string.
 **Failure behavior** — an unknown tool name throws, caught by the loop above
-and returned as `isError`. Note the ordering: `session.observe` runs *before*
-`record`, so a refused call never reaches the event log.
+and returned as `isError`. Inside `record`, the byte limit and shared session
+validator run *before* the append, so a refused call never reaches the event log.
+Invalid retained history stops startup with a nonzero exit and unchanged bytes.
 **Next** — the session mutates its store, Step 6.
 
 ### Step 5b — the same shape in the model layer

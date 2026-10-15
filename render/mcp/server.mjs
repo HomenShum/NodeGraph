@@ -14,7 +14,7 @@
  *   node mcp/server.mjs [--events <path>]
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, createReadStream, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { GraphSession } from "../dist/index.js";
@@ -28,6 +28,57 @@ mkdirSync(dirname(EVENTS), { recursive: true });
 // The session IS the validator. Its state also dedupes eventIds, so a
 // retried tool call is idempotent exactly like the in-browser session.
 const session = new GraphSession({ maxNodes: 1000, maxEdges: 3000, maxSeen: 5000 });
+const MAX_RECORD_BYTES = 1024 * 1024;
+
+const apply = (type, payload) => {
+  if (type === "observe") {
+    session.observe(payload.entities, payload.measuredCount, { eventId: payload.eventId });
+  } else if (type === "assert_edge") {
+    session.assertEdge(payload.a, payload.b, payload.receipt, { eventId: payload.eventId });
+  } else {
+    throw new Error(`unknown event type: ${type}`);
+  }
+};
+
+// Writer validation must remember the same retained history the viewer replays.
+async function restore() {
+  const controller = new AbortController();
+  const deadline = Date.now() + 30_000;
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  const input = createReadStream(EVENTS, { highWaterMark: 64 * 1024, signal: controller.signal });
+  const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+  let pending = Buffer.alloc(0);
+  let recordNumber = 0;
+  try {
+    for await (const chunk of input) {
+      pending = Buffer.concat([pending, chunk]);
+      let end;
+      while ((end = pending.indexOf(10)) !== -1) {
+        if (Date.now() >= deadline) throw new Error("30-second replay budget exceeded");
+        if (end + 1 > MAX_RECORD_BYTES) throw new Error(`record exceeds ${MAX_RECORD_BYTES} bytes`);
+        const text = decoder.decode(pending.subarray(0, end));
+        pending = pending.subarray(end + 1);
+        if (text) {
+          const event = JSON.parse(text);
+          apply(event.type, event);
+        }
+        recordNumber += 1;
+      }
+      if (pending.length >= MAX_RECORD_BYTES) throw new Error(`record exceeds ${MAX_RECORD_BYTES} bytes`);
+    }
+    if (Date.now() >= deadline) throw new Error("30-second replay budget exceeded");
+    if (pending.length) throw new Error("unterminated final record");
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw new Error(`Cannot replay event log at record ${recordNumber + 1}: ${error.message}`, { cause: error });
+    }
+  } finally {
+    clearTimeout(timer);
+    input.destroy();
+  }
+}
+
+await restore();
 
 const TOOLS = [
   {
@@ -76,18 +127,19 @@ const TOOLS = [
 ];
 
 const record = (type, payload) => {
-  appendFileSync(EVENTS, JSON.stringify({ ts: Date.now(), type, ...payload }) + "\n");
+  const encoded = JSON.stringify({ ts: Date.now(), type, ...payload }) + "\n";
+  if (Buffer.byteLength(encoded) > MAX_RECORD_BYTES) throw new Error(`record exceeds ${MAX_RECORD_BYTES} bytes`);
+  apply(type, payload);
+  appendFileSync(EVENTS, encoded);
 };
 
 const call = (name, args) => {
   if (name === "observe") {
-    session.observe(args.entities, args.measuredCount, { eventId: args.eventId });
     record("observe", { entities: args.entities, measuredCount: args.measuredCount, eventId: args.eventId });
     const s = session.getSnapshot();
     return `observed ${args.entities.length} entities; graph now ${s.nodes.length} entities / ${s.edges.length} edges`;
   }
   if (name === "assert_edge") {
-    session.assertEdge(args.a, args.b, args.receipt, { eventId: args.eventId });
     record("assert_edge", { a: args.a, b: args.b, receipt: args.receipt, eventId: args.eventId });
     return `asserted ${args.a.label} -> ${args.b.label} (${args.receipt.source} ${args.receipt.release})`;
   }
